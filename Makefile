@@ -8,30 +8,30 @@
 # 	chat-identity
 # //////////////////////
 
-run-chat-identity:
+chat-identity-run:
 	@air -c .air.chat-identity.toml
 
-run-chat-identity-local:
+chat-identity-run-local:
 	go run cmd/chat-identity/main.go
 
 # //////////////////////
 # 	chat-orchestrator
 # //////////////////////
 
-run-chat-orchestrator:
+chat-orchestrator-run:
 	@air -c .air.chat-orchestrator.toml
 
-run-chat-orchestrator-local:
+chat-orchestrator-run-local:
 	go run cmd/chat-orchestrator/main.go
 
 # //////////////////////
 # 	chat-session
 # //////////////////////
 
-run-chat-session:
+session-run:
 	@air -c .air.chat-session.toml
 
-run-chat-session-local:
+session-run-local:
 	go run cmd/chat-session/main.go
 
 # ============================

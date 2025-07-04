@@ -3,6 +3,7 @@ package chat_identity
 import (
 	"context"
 	"errors"
+	"github.com/Koubae/jabba-ai-chat-app/internal/chat-identity/infrastructure/api/routes"
 	"github.com/Koubae/jabba-ai-chat-app/pkg/common/settings"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
@@ -45,7 +46,7 @@ func RunServer() {
 	if err != nil {
 		panic(err.Error())
 	}
-	//routes.InitRoutes(router) TODO!
+	routes.InitRoutes(router)
 
 	srv := &http.Server{
 		Addr:    config.GetAddr(),

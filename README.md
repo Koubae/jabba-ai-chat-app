@@ -34,11 +34,12 @@ make run-chat-identity
 
 ### Services
 
-| Service             | Port    |
-|---------------------|---------|
-| `chat-identity`     | `20000` |
-| `chat-orchestrator` | `20001` |
-| `chat-session`      | `20002` |
+| Service             | Port    | Host                   |
+|---------------------|---------|------------------------|
+| `chat-identity`     | `20000` | http://localhost:20000 |
+| `chat-orchestrator` | `20001` | http://localhost:20001 |
+| `chat-session`      | `20002` | http://localhost:20002 |
+
 
 
 chat-identity
