@@ -24,6 +24,16 @@ run-chat-orchestrator:
 run-chat-orchestrator-local:
 	go run cmd/chat-orchestrator/main.go
 
+# //////////////////////
+# 	chat-session
+# //////////////////////
+
+run-chat-session:
+	@air -c .air.chat-session.toml
+
+run-chat-session-local:
+	go run cmd/chat-session/main.go
+
 # ============================
 # 	Tests
 # ============================
