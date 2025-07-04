@@ -121,9 +121,9 @@ type SignUpHandler struct {
 
 func (h *SignUpHandler) Handle() error {
 	// TODO: check that user DOES NMOT exists in db
-	UserID := uint(1) // TODO: Create from db for real
+	ID := uint(1) // TODO: Create from db for real
 	user := model.User{
-		UserID:        UserID,
+		ID:            ID,
 		Username:      h.Command.Username,
 		ApplicationID: h.Command.ApplicationID,
 	}
