@@ -1,8 +1,10 @@
 package controllers
 
 import (
+	"errors"
 	"github.com/Koubae/jabba-ai-chat-app/internal/chat-identity/application/auth/handlers"
 	"github.com/Koubae/jabba-ai-chat-app/internal/chat-identity/di_container"
+	domainrepository "github.com/Koubae/jabba-ai-chat-app/internal/chat-identity/domain/user/repository"
 	"github.com/gin-gonic/gin"
 	"net/http"
 )
@@ -31,8 +33,11 @@ func (controller *AuthController) LoginV1(c *gin.Context) {
 	handler := handlers.LoginHandler{Command: request, UserService: container.UserService}
 
 	err := handler.Handle()
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	if errors.Is(err, domainrepository.ErrUserNotFound) {
+		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		return
+	} else if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 

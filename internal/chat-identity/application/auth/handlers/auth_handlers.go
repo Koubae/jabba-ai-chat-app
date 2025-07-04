@@ -49,10 +49,14 @@ type LoginHandler struct {
 func (h *LoginHandler) Handle() error {
 	expire := time.Now().Add(settings.AuthTokenExpirationTime).Unix()
 
-	// TODO Mocking find userID in db | Add real database here!
-	userID := uint(1)
+	user, err := h.UserService.GetUser(h.Command.ApplicationID, h.Command.Username)
+	if user == nil {
+		return domainrepository.ErrUserNotFound
+	} else if err != nil {
+		return err
+	}
 
-	token, err := generateJWTWithRSA(userID, h.Command.Username, h.Command.ApplicationID, expire)
+	token, err := generateJWTWithRSA(user.ID, user.ApplicationID, user.Username, expire)
 	if err != nil {
 		return err
 	}
@@ -61,7 +65,7 @@ func (h *LoginHandler) Handle() error {
 	return nil
 }
 
-func generateJWTWithRSA(userID uint, userName string, ApplicationID string, expire int64) (string, error) {
+func generateJWTWithRSA(userID int64, ApplicationID string, userName string, expire int64) (string, error) {
 	privateKey := loadAndGetPrivateKey()
 	claims := jwt.MapClaims{
 		"sub": userID,
@@ -69,8 +73,8 @@ func generateJWTWithRSA(userID uint, userName string, ApplicationID string, expi
 		"iss": "jabba-ai-chat",
 
 		"role":           "user",
-		"user_name":      userName,
 		"application_id": ApplicationID,
+		"user_name":      userName,
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)
 	return token.SignedString(privateKey)
