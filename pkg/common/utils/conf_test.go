@@ -19,7 +19,12 @@ func TestGetPrivateKey(t *testing.T) {
 		t.Fatalf("Failed to create test directory: %v", err)
 	}
 
-	defer os.RemoveAll(confDirName)
+	defer func(path string) {
+		err := os.RemoveAll(path)
+		if err != nil {
+			t.Fatalf("Failed to remove test directory: %v", err)
+		}
+	}(confDirName)
 
 	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
@@ -51,7 +56,10 @@ func TestGetPrivateKey(t *testing.T) {
 			name:    "Missing private key file",
 			wantErr: true,
 			setup: func() {
-				os.Remove(privateKeyPath)
+				err := os.Remove(privateKeyPath)
+				if err != nil {
+					return
+				}
 			},
 		},
 	}
@@ -77,7 +85,12 @@ func TestGetPublicKey(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create test directory: %v", err)
 	}
-	defer os.RemoveAll(confDirName)
+	defer func(path string) {
+		err := os.RemoveAll(path)
+		if err != nil {
+			t.Fatalf("Failed to remove test directory: %v", err)
+		}
+	}(confDirName)
 
 	// Generate a test key pair
 	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
@@ -112,7 +125,10 @@ func TestGetPublicKey(t *testing.T) {
 			name:    "Missing public key file",
 			wantErr: true,
 			setup: func() {
-				os.Remove(publicKeyPath)
+				err := os.Remove(publicKeyPath)
+				if err != nil {
+					return
+				}
 			},
 		},
 	}
@@ -138,7 +154,12 @@ func TestGetPublicKeyOrPanic(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create test directory: %v", err)
 	}
-	defer os.RemoveAll(confDirName)
+	defer func(path string) {
+		err := os.RemoveAll(path)
+		if err != nil {
+			t.Fatalf("Failed to remove test directory: %v", err)
+		}
+	}(confDirName)
 
 	// Generate a test key pair
 	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
@@ -173,7 +194,10 @@ func TestGetPublicKeyOrPanic(t *testing.T) {
 			name:        "Missing public key file",
 			shouldPanic: true,
 			setup: func() {
-				os.Remove(publicKeyPath)
+				err := os.Remove(publicKeyPath)
+				if err != nil {
+					return
+				}
 			},
 		},
 	}

@@ -10,7 +10,10 @@ import (
 func TestGetEnv(t *testing.T) {
 	cleanup := func(keys ...string) {
 		for _, key := range keys {
-			os.Unsetenv(key)
+			err := os.Unsetenv(key)
+			if err != nil {
+				return
+			}
 		}
 	}
 
@@ -48,7 +51,10 @@ func TestGetEnv(t *testing.T) {
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
 				if tt.envValue != "MISSING_ENV" {
-					os.Setenv(tt.envKey, tt.envValue)
+					err := os.Setenv(tt.envKey, tt.envValue)
+					if err != nil {
+						return
+					}
 				}
 				got := GetEnvString(tt.envKey, tt.defaultVal)
 				if got != tt.want {
@@ -105,7 +111,10 @@ func TestGetEnv(t *testing.T) {
 				}()
 
 				if tt.envValue != "" {
-					os.Setenv(tt.envKey, tt.envValue)
+					err := os.Setenv(tt.envKey, tt.envValue)
+					if err != nil {
+						return
+					}
 				}
 
 				got := GetEnvInt(tt.envKey, tt.defaultVal)
@@ -167,7 +176,10 @@ func TestGetEnv(t *testing.T) {
 				}()
 
 				if tt.envValue != "" {
-					os.Setenv(tt.envKey, tt.envValue)
+					err := os.Setenv(tt.envKey, tt.envValue)
+					if err != nil {
+						return
+					}
 				}
 
 				got := GetEnvBool(tt.envKey, tt.defaultVal)
@@ -224,7 +236,10 @@ func TestGetEnv(t *testing.T) {
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
 				if tt.envValue != "MISSING_ENV" {
-					os.Setenv(tt.envKey, tt.envValue)
+					err := os.Setenv(tt.envKey, tt.envValue)
+					if err != nil {
+						return
+					}
 				}
 				got := GetEnvStringSlice(tt.envKey, tt.defaultVal)
 				if !reflect.DeepEqual(got, tt.want) {
@@ -297,7 +312,10 @@ func TestGetEnv(t *testing.T) {
 				}()
 
 				if tt.envValue != "MISSING_ENV" {
-					os.Setenv(tt.envKey, tt.envValue)
+					err := os.Setenv(tt.envKey, tt.envValue)
+					if err != nil {
+						return
+					}
 				}
 				got := GetEnvIntSlice(tt.envKey, tt.defaultVal)
 
