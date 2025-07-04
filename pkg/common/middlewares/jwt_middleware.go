@@ -47,7 +47,7 @@ func jwtMiddleware[S JWTSecret](c *gin.Context, method jwt.SigningMethod, secret
 	c.Set("issuer", claims["iss"])
 	c.Set("role", claims["role"])
 	c.Set("user_name", claims["user_name"])
-	c.Set("client_id", claims["client_id"])
+	c.Set("application_id", claims["application_id"])
 
 	c.Next()
 }
