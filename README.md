@@ -19,10 +19,10 @@ export GOPATH=$HOME/go
 export PATH=$PATH:$GOROOT/bin
 ```
 
-* 2) Install dependencies
+* 2) Initialize (this will perform some installations)
 
 ```bash
-go mod tidy
+make init
 ```
 
 * 3) Start

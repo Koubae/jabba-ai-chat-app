@@ -32,3 +32,17 @@ ifndef TEST
 else
 	go test ./... -v -run $(TEST)
 endif
+
+
+# --------------------------
+# Init
+# --------------------------
+init: .update-env-file
+
+.update-env-file:
+	@echo 'Updating .env from .env.example 🖋️...'
+	# Updating .env
+	@cp .env.example .env
+
+.install-deps:
+	go mod tidy
