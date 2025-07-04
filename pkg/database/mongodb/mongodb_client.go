@@ -91,10 +91,48 @@ func (c *Client) ListDatabases(ctx context.Context) ([]string, error) {
 	return databases, nil
 }
 
-func (c *Client) CreateUniqueIndex(coll *mongo.Collection, field string, ctx context.Context) error {
-	_, err := coll.Indexes().CreateOne(ctx, mongo.IndexModel{
+func (c *Client) CreateUniqueIndex(collection *mongo.Collection, ctx context.Context, field string) error {
+	_, err := collection.Indexes().CreateOne(ctx, mongo.IndexModel{
 		Keys:    bson.M{field: 1},
 		Options: options.Index().SetUnique(true),
 	})
+	return err
+}
+
+func (c *Client) CreateCompoundUniqueIndex(collection *mongo.Collection, ctx context.Context, fields []string) error {
+	keys := bson.D{}
+	for _, field := range fields {
+		keys = append(keys, bson.E{Key: field, Value: 1})
+	}
+
+	indexModel := mongo.IndexModel{
+		Keys:    keys,
+		Options: options.Index().SetUnique(true),
+	}
+
+	_, err := collection.Indexes().CreateOne(ctx, indexModel)
+	return err
+}
+
+// CreateIndex Usage examples:
+// Single field ascending
+// err = client.CreateIndex(collection, context.Background(), []string{"user_id"}, []int{1})
+// Multiple fields with mixed order
+// err = client.CreateIndex(collection, context.Background(), []string{"user_id", "created_at"}, []int{1, -1})
+func (c *Client) CreateIndex(collection *mongo.Collection, ctx context.Context, fields []string, orders []int) error {
+	if len(fields) != len(orders) {
+		return fmt.Errorf("fields and orders must have the same length")
+	}
+
+	keys := bson.D{}
+	for i, field := range fields {
+		keys = append(keys, bson.E{Key: field, Value: orders[i]})
+	}
+
+	indexModel := mongo.IndexModel{
+		Keys: keys,
+	}
+
+	_, err := collection.Indexes().CreateOne(ctx, indexModel)
 	return err
 }
