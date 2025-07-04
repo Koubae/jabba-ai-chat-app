@@ -123,7 +123,7 @@ func (h *SignUpHandler) Handle() error {
 	// TODO: check that user DOES NMOT exists in db
 	ID := uint(1) // TODO: Create from db for real
 	user := model.User{
-		ID:            ID,
+		ID:            int64(ID),
 		Username:      h.Command.Username,
 		ApplicationID: h.Command.ApplicationID,
 	}

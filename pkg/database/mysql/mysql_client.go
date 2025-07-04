@@ -20,7 +20,8 @@ func NewClient() (*Client, error) {
 		return nil, err
 	}
 
-	db, err = sql.Open("mysql", config.Dns()+"?parseTime=true")
+	dns := config.Dns() + "?parseTime=true"
+	db, err = sql.Open("mysql", dns)
 	if err != nil {
 		return nil, err
 	}

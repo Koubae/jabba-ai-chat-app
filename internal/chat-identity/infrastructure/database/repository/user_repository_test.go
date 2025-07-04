@@ -1,4 +1,4 @@
-package models
+package repository
 
 import (
 	"github.com/Koubae/jabba-ai-chat-app/internal/chat-identity/domain/user/model"
@@ -49,48 +49,42 @@ func TestMain(m *testing.M) {
 
 const HashedPassword = "$2a$10$GPeYnQMl9mGX1hvIrqTIjeJmPOESnUHFe39Ksm0HifPU8r9YchbbC"
 
-func TestUserCrud(t *testing.T) {
+func TestNewUserRepository(t *testing.T) {
 	client := mysql.GetClient()
+	repository := NewUserRepository(client)
 
+	applicationID := "1234567890" + utils.RandomString(5)
 	username := "integration-tests" + utils.RandomString(5)
-	user := &model.User{ApplicationID: "application-integration-tests", Username: username, PasswordHash: HashedPassword}
-	var id int64
+	user := &model.User{
+		ApplicationID: applicationID,
+		Username:      username,
+		PasswordHash:  HashedPassword,
+	}
 
 	t.Run("Create", func(t *testing.T) {
-		query := `
-			INSERT INTO users (application_id, username, password_hash) 
-			VALUES (?, ?, ?)
-		`
-		result, err := client.DB.Exec(query, user.ApplicationID, user.Username, user.PasswordHash)
-		assert.NoError(t, err)
-
-		id, _ = result.LastInsertId()
-
-		assert.NotEqual(t, int64(0), id)
-
+		err := repository.Create(user)
+		if err != nil {
+			t.Errorf("failed to create user: %v", err)
+		}
+		assert.NotEqual(t, int64(0), user.ID)
 	})
 
-	t.Run("Find", func(t *testing.T) {
-		query := `
-			SELECT id, application_id, username, password_hash, created, updated 
-			FROM users 
-			WHERE id = ?
-		`
-
-		userFound := &model.User{}
-		row := client.DB.QueryRow(query, int64(id))
-		err := row.Scan(
-			&userFound.ID,
-			&userFound.ApplicationID,
-			&userFound.Username,
-			&userFound.PasswordHash,
-			&userFound.Created,
-			&userFound.Updated,
-		)
+	t.Run("GetByID", func(t *testing.T) {
+		user, err := repository.GetByID(user.ID)
 
 		assert.NoError(t, err)
-		assert.Equal(t, id, userFound.ID)
-		assert.Equal(t, user.Username, userFound.Username)
+		assert.Equal(t, applicationID, user.ApplicationID)
+		assert.Equal(t, username, user.Username)
+		assert.Equal(t, HashedPassword, user.PasswordHash)
+	})
+
+	t.Run("GetByUsername", func(t *testing.T) {
+		user, err := repository.GetByUsername(applicationID, username)
+
+		assert.NoError(t, err)
+		assert.Equal(t, applicationID, user.ApplicationID)
+		assert.Equal(t, username, user.Username)
+		assert.Equal(t, HashedPassword, user.PasswordHash)
 	})
 
 }
