@@ -3,7 +3,9 @@ package handlers
 import (
 	"crypto/rsa"
 	"errors"
+	"github.com/Koubae/jabba-ai-chat-app/internal/chat-identity/application/service"
 	"github.com/Koubae/jabba-ai-chat-app/internal/chat-identity/domain/user/model"
+	domainrepository "github.com/Koubae/jabba-ai-chat-app/internal/chat-identity/domain/user/repository"
 	"github.com/Koubae/jabba-ai-chat-app/pkg/common/settings"
 	"github.com/Koubae/jabba-ai-chat-app/pkg/common/utils"
 	"github.com/golang-jwt/jwt/v5"
@@ -41,6 +43,7 @@ type LoginResponse struct {
 type LoginHandler struct {
 	Command  LoginRequest
 	Response LoginResponse
+	*service.UserService
 }
 
 func (h *LoginHandler) Handle() error {
@@ -111,26 +114,30 @@ func (r *SignUpRequest) Validate() error {
 }
 
 type SignUpResponse struct {
-	model.User
+	*model.User
 }
 
 type SignUpHandler struct {
 	Command  SignUpRequest
 	Response SignUpResponse
+	*service.UserService
 }
 
 func (h *SignUpHandler) Handle() error {
-	// TODO: check that user DOES NMOT exists in db
-	ID := uint(1) // TODO: Create from db for real
-	user := model.User{
-		ID:            int64(ID),
-		Username:      h.Command.Username,
-		ApplicationID: h.Command.ApplicationID,
+	user, err := h.UserService.GetUser(h.Command.ApplicationID, h.Command.Username)
+	if user != nil {
+		return domainrepository.ErrUserAlreadyExists
+	} else if err != nil && !errors.Is(err, domainrepository.ErrUserNotFound) {
+		return err
+	}
+
+	user, err = h.UserService.CreateUser(h.Command.ApplicationID, h.Command.Username, h.Command.Password)
+	if err != nil {
+		return nil
 	}
 
 	h.Response = SignUpResponse{
 		User: user,
 	}
-
 	return nil
 }

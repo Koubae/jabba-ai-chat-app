@@ -32,6 +32,7 @@ func InitRoutes(router *gin.Engine) {
 	}
 
 	v1 := router.Group("/api/v1")
+
 	authController := controllers.AuthController{}
 	authV1 := v1.Group("/auth")
 	{

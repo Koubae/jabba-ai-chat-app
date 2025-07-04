@@ -2,6 +2,7 @@ package repository
 
 import (
 	"github.com/Koubae/jabba-ai-chat-app/internal/chat-identity/domain/user/model"
+	domainrepository "github.com/Koubae/jabba-ai-chat-app/internal/chat-identity/domain/user/repository"
 	"github.com/Koubae/jabba-ai-chat-app/pkg/common/settings"
 	_ "github.com/Koubae/jabba-ai-chat-app/pkg/common/testings"
 	"github.com/Koubae/jabba-ai-chat-app/pkg/common/utils"
@@ -63,10 +64,13 @@ func TestNewUserRepository(t *testing.T) {
 
 	t.Run("Create", func(t *testing.T) {
 		err := repository.Create(user)
-		if err != nil {
-			t.Errorf("failed to create user: %v", err)
-		}
+		assert.NoError(t, err)
 		assert.NotEqual(t, int64(0), user.ID)
+	})
+	t.Run("Create On Duplicate must return USER_ALREADY_EXISTS error", func(t *testing.T) {
+		err := repository.Create(user)
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, domainrepository.ErrUserAlreadyExists)
 	})
 
 	t.Run("GetByID", func(t *testing.T) {
@@ -77,6 +81,13 @@ func TestNewUserRepository(t *testing.T) {
 		assert.Equal(t, username, user.Username)
 		assert.Equal(t, HashedPassword, user.PasswordHash)
 	})
+	t.Run("GetByID not found", func(t *testing.T) {
+		userNotFound, err := repository.GetByID(99999)
+
+		assert.Nil(t, userNotFound)
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, domainrepository.ErrUserNotFound)
+	})
 
 	t.Run("GetByUsername", func(t *testing.T) {
 		user, err := repository.GetByUsername(applicationID, username)
@@ -85,6 +96,19 @@ func TestNewUserRepository(t *testing.T) {
 		assert.Equal(t, applicationID, user.ApplicationID)
 		assert.Equal(t, username, user.Username)
 		assert.Equal(t, HashedPassword, user.PasswordHash)
+	})
+	t.Run("GetByUsername not found", func(t *testing.T) {
+		userNotFound, err := repository.GetByUsername("potato", username)
+
+		assert.Nil(t, userNotFound)
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, domainrepository.ErrUserNotFound)
+
+		userNotFound, err = repository.GetByUsername(applicationID, "potato")
+
+		assert.Nil(t, userNotFound)
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, domainrepository.ErrUserNotFound)
 	})
 
 }

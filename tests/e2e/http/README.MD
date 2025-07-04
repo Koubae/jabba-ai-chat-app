@@ -13,8 +13,10 @@ access_token_admin=$(curl -s --request POST  localhost:20000/api/v1/auth/login -
 #### Sign UP
 
 ```bash
-user_id=$(curl -s --request POST localhost:20000/api/v1/auth/signup -H "Content-Type: application/json" -d '{"username": "user_1", "password": "pass","application_id": "ai-bot"}' | jq -r '.user_id'); \
+user_id=$(curl -s --request POST localhost:20000/api/v1/auth/signup -H "Content-Type: application/json" -d '{"username": "user_1", "password": "pass","application_id": "ai-bot"}' | jq -r '.id'); \
   echo $user_id;
+  
+curl -s --request POST localhost:20000/api/v1/auth/signup -H "Content-Type: application/json" -d '{"username": "user_1", "password": "pass","application_id": "ai-bot"}';echo;
 ```
 
 #### Login

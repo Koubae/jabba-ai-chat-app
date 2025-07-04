@@ -20,14 +20,15 @@ POST localhost:20000/api/v1/auth/signup
 Content-Type: application/json
 
 {
-  "username": "user_1",
-  "password": "pass",
-  "application_id": "ai-bot"
+  "application_id": "ai-bot",
+  "username": "user_{{$timestamp}}_{{$randomInt}}",
+  "password": "pass"
 }
 
 > {%
     // Save the token to an environment variable
-    client.global.set("user_id", response.body.user_id);
+    client.global.set("user_id", response.body.id);
+    client.global.set("username", response.body.username);
 %}
 
 ### Login V1
@@ -37,7 +38,7 @@ POST localhost:20000/api/v1/auth/login
 Content-Type: application/json
 
 {
-  "username": "user_1",
+  "username": "{{username}}",
   "password": "pass",
   "application_id": "ai-bot"
 }

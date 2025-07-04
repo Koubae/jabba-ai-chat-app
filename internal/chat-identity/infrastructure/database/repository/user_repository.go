@@ -14,8 +14,8 @@ type UserRepository struct {
 	db *mysql.Client
 }
 
-func NewUserRepository(db *mysql.Client) UserRepository {
-	return UserRepository{db: db}
+func NewUserRepository(db *mysql.Client) *UserRepository {
+	return &UserRepository{db: db}
 }
 
 func (r *UserRepository) Create(user *model.User) error {

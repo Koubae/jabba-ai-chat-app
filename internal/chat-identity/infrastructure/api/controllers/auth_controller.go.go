@@ -2,11 +2,13 @@ package controllers
 
 import (
 	"github.com/Koubae/jabba-ai-chat-app/internal/chat-identity/application/auth/handlers"
+	"github.com/Koubae/jabba-ai-chat-app/internal/chat-identity/di_container"
 	"github.com/gin-gonic/gin"
 	"net/http"
 )
 
-type AuthController struct{}
+type AuthController struct {
+}
 
 type LoginResponse struct {
 	AccessToken string `json:"access_token"`
@@ -25,7 +27,8 @@ func (controller *AuthController) LoginV1(c *gin.Context) {
 		return
 	}
 
-	handler := handlers.LoginHandler{Command: request}
+	container := di_container.Container
+	handler := handlers.LoginHandler{Command: request, UserService: container.UserService}
 
 	err := handler.Handle()
 	if err != nil {
@@ -48,12 +51,13 @@ func (controller *AuthController) SignUpV1(c *gin.Context) {
 		return
 	}
 
-	handler := handlers.SignUpHandler{Command: request}
+	container := di_container.Container
+	handler := handlers.SignUpHandler{Command: request, UserService: container.UserService}
 	if err := handler.Handle(); err != nil {
 		c.JSON(400, gin.H{"error": err.Error()})
 		return
 	}
 
-	c.JSON(200, handler.Response)
+	c.JSON(200, handler.Response.User)
 
 }
