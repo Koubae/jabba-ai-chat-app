@@ -4,11 +4,25 @@
 # 	Run
 # ============================
 
+# //////////////////////
+# 	chat-identity
+# //////////////////////
+
 run-chat-identity:
 	@air -c .air.chat-identity.toml
 
 run-chat-identity-local:
 	go run cmd/chat-identity/main.go
+
+# //////////////////////
+# 	chat-orchestrator
+# //////////////////////
+
+run-chat-orchestrator:
+	@air -c .air.chat-orchestrator.toml
+
+run-chat-orchestrator-local:
+	go run cmd/chat-orchestrator/main.go
 
 # ============================
 # 	Tests

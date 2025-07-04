@@ -1,4 +1,4 @@
-package chat_identity
+package chat_orchestrator
 
 import (
 	"context"
@@ -14,7 +14,7 @@ import (
 )
 
 func init() {
-	err := godotenv.Load(".env.chat-identity")
+	err := godotenv.Load(".env.chat-orchestrator")
 	if err != nil {
 		panic(err.Error())
 	}

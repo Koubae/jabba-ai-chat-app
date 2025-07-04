@@ -10,6 +10,8 @@ import (
 
 type Config struct {
 	port           uint16
+	AppName        string
+	AppVersion     string
 	Environment    string
 	TrustedProxies []string
 }
@@ -34,6 +36,9 @@ func NewConfig() *Config {
 		panic(errTemp.Error())
 	}
 
+	appName := utils.GetEnvString("APP_NAME", "unknown")
+	appVersion := utils.GetEnvString("APP_VERSION", "unknown")
+
 	environment := utils.GetEnvString("APP_ENVIRONMENT", "development")
 	if !slices.Contains(Environments[:], environment) {
 		panic(fmt.Sprintf("Invalid environment: %s, supported envs are %v", environment, Environments))
@@ -42,6 +47,8 @@ func NewConfig() *Config {
 
 	config = &Config{
 		port:           uint16(port),
+		AppName:        appName,
+		AppVersion:     appVersion,
 		Environment:    environment,
 		TrustedProxies: trustedProxies,
 	}
