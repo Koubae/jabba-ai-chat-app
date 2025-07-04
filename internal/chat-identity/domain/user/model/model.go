@@ -10,3 +10,11 @@ type User struct {
 	Created       time.Time `json:"created" db:"created"`
 	Updated       time.Time `json:"updated" db:"updated"`
 }
+
+type UserResponse struct {
+	ID            int64     `json:"id" db:"id"`
+	ApplicationID string    `json:"application_id" db:"application_id"`
+	Username      string    `json:"username" db:"username"`
+	Created       time.Time `json:"created" db:"created"`
+	Updated       time.Time `json:"updated" db:"updated"`
+}

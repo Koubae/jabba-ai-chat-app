@@ -12,6 +12,7 @@ type UserRepository interface {
 }
 
 var (
-	ErrUserNotFound      = errors.New("USER_NOT_FOUND")
-	ErrUserAlreadyExists = errors.New("USER_ALREADY_EXISTS")
+	ErrUserNotFound         = errors.New("USER_NOT_FOUND")
+	ErrUserAlreadyExists    = errors.New("USER_ALREADY_EXISTS")
+	ErrUserIdentityMismatch = errors.New("USER_IDENTITY_MISMATCH")
 )

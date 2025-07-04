@@ -118,7 +118,7 @@ func (r *SignUpRequest) Validate() error {
 }
 
 type SignUpResponse struct {
-	*model.User
+	*model.UserResponse
 }
 
 type SignUpHandler struct {
@@ -141,7 +141,13 @@ func (h *SignUpHandler) Handle() error {
 	}
 
 	h.Response = SignUpResponse{
-		User: user,
+		&model.UserResponse{
+			ID:            user.ID,
+			ApplicationID: user.ApplicationID,
+			Username:      user.Username,
+			Created:       user.Created,
+			Updated:       user.Updated,
+		},
 	}
 	return nil
 }

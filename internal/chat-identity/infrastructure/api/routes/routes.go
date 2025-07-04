@@ -40,5 +40,9 @@ func InitRoutes(router *gin.Engine) {
 		authV1.POST("/signup", authController.SignUpV1)
 	}
 
-	_ = authMiddleWare
+	accountControllers := controllers.AccountControllers{}
+	accountV1 := v1.Group("/user", authMiddleWare)
+	{
+		accountV1.GET("/", accountControllers.Get)
+	}
 }

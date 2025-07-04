@@ -3,6 +3,7 @@ package middlewares
 import (
 	"crypto/rsa"
 	"fmt"
+	"github.com/Koubae/jabba-ai-chat-app/pkg/auth"
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 	"net/http"
@@ -42,12 +43,25 @@ func jwtMiddleware[S JWTSecret](c *gin.Context, method jwt.SigningMethod, secret
 		return
 	}
 
-	userId := uint(claims["sub"].(float64))
+	applicationId := claims["application_id"].(string)
+	userId := int64(claims["sub"].(float64))
+	issuer := claims["iss"].(string)
+	role := claims["role"].(string)
+	userName := claims["user_name"].(string)
+	accessToken := &auth.AccessToken{
+		ApplicationId: claims["application_id"].(string),
+		UserId:        int64(claims["sub"].(float64)),
+		Username:      claims["user_name"].(string),
+		Issuer:        claims["iss"].(string),
+		Role:          claims["role"].(string),
+	}
+
+	c.Set("application_id", applicationId)
 	c.Set("user_id", userId)
-	c.Set("issuer", claims["iss"])
-	c.Set("role", claims["role"])
-	c.Set("user_name", claims["user_name"])
-	c.Set("application_id", claims["application_id"])
+	c.Set("issuer", issuer)
+	c.Set("role", role)
+	c.Set("user_name", userName)
+	c.Set("access_token", accessToken)
 
 	c.Next()
 }
