@@ -96,17 +96,10 @@ func (h *ChatHandler) Handle(ctx context.Context, broadcaster *bot.Broadcaster, 
 	response := "Goodbye"
 	var err error
 	for {
-		messageType, message, err := h.conn.ReadMessage()
+		messageType, message, err := h.RecV()
 		if err != nil {
-			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure, websocket.CloseNoStatusReceived) {
-				log.Printf("%s Error reading message | Terminating connection, error: %s\n", h, err)
-				err = errors.New("unexpected error while reading message")
-			} else {
-				log.Printf("%s client closed connection | Terminating connection\n", h)
-			}
 			break
 		}
-		log.Printf("%s received: %s", h.identity, message)
 
 		// Send the user a message already this is the User's original message!
 		go func() {
@@ -152,6 +145,21 @@ func (h *ChatHandler) Handle(ctx context.Context, broadcaster *bot.Broadcaster, 
 	}
 
 	return response, err
+}
+
+func (h *ChatHandler) RecV() (int, []byte, error) {
+	messageType, message, err := h.conn.ReadMessage()
+	if err != nil {
+		if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure, websocket.CloseNoStatusReceived) {
+			log.Printf("%s Error reading message | Terminating connection, error: %s\n", h, err)
+			err = errors.New("unexpected error while reading message")
+		} else {
+			log.Printf("%s client closed connection | Terminating connection\n", h)
+		}
+		return -1, []byte{}, err
+	}
+	log.Printf("%s received: %s", h.identity, message)
+	return messageType, message, err
 }
 
 func (h *ChatHandler) sendMessageHistoryToClient(ctx context.Context, messageRepository repository.MessageRepository) {
