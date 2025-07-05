@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/Koubae/jabba-ai-chat-app/internal/chat-session/application/handlers"
 	"github.com/Koubae/jabba-ai-chat-app/internal/chat-session/container"
+	"github.com/Koubae/jabba-ai-chat-app/pkg/auth"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 	"log"
@@ -64,9 +65,12 @@ func (controller *SessionController) CreateConnection(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
 	defer cancel()
 
-	if accessToken, exists := c.Get("access_token"); exists {
-		ctx = context.WithValue(ctx, "access_token", accessToken)
+	accessToken, exists := c.Get("access_token")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Authentication failed"})
+		return
 	}
+	ctx = context.WithValue(ctx, "access_token", accessToken)
 
 	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
@@ -74,6 +78,10 @@ func (controller *SessionController) CreateConnection(c *gin.Context) {
 		return
 	}
 	defer conn.Close()
+
+	accessTokenObj, _ := ctx.Value("access_token").(*auth.AccessToken)
+	fmt.Println("Created WebSocket connection: ApplicationID: %s, UserID: %s, Username: %s",
+		accessTokenObj.ApplicationId, accessTokenObj.UserId, accessTokenObj.Username)
 
 	for {
 		messageType, message, err := conn.ReadMessage()
