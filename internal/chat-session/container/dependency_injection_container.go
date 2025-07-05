@@ -23,12 +23,15 @@ func CreateDIContainer() {
 	broadcaster := bot.NewBroadcaster()
 	aiBotConnector := bot.NewAIBotConnector()
 	sessionRepository := repository.NewSessionRepository(db)
+	messageRepository := repository.NewMessageRepository(db)
 	sessionService := service.NewSessionService(sessionRepository, aiBotConnector)
-	chatService := service.NewChatService(sessionRepository, broadcaster, aiBotConnector)
+
+	chatService := service.NewChatService(sessionRepository, messageRepository, broadcaster, aiBotConnector)
 
 	Container = &DependencyInjectionContainer{
 		DB:                db,
 		SessionRepository: sessionRepository,
+		MessageRepository: messageRepository,
 		Broadcaster:       broadcaster,
 		AIBotConnector:    aiBotConnector,
 		SessionService:    sessionService,
@@ -47,6 +50,7 @@ func ShutDown() {
 type DependencyInjectionContainer struct {
 	DB *redis.Client
 	*repository.SessionRepository
+	*repository.MessageRepository
 	*bot.Broadcaster
 	*bot.AIBotConnector
 	*service.SessionService

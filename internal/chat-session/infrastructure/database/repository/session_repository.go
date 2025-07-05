@@ -16,12 +16,6 @@ import (
 
 const SessionCacheKey = "_SESSION_CACHE_KEY_"
 
-type SessionRepository struct {
-	db                 *redis.Client
-	cacheServicePrefix string
-	ttlSeconds         time.Duration
-}
-
 func NewSessionRepository(db *redis.Client) *SessionRepository {
 	cacheServicePrefix := utils.GetEnvString("CACHE_SERVICE_PREFIX", "chat_session:")
 	ttlSeconds := utils.GetEnvInt("CACHE_TTL_SECONDS", 1800)
@@ -31,6 +25,12 @@ func NewSessionRepository(db *redis.Client) *SessionRepository {
 		cacheServicePrefix: cacheServicePrefix,
 		ttlSeconds:         time.Duration(ttlSeconds) * time.Second,
 	}
+}
+
+type SessionRepository struct {
+	db                 *redis.Client
+	cacheServicePrefix string
+	ttlSeconds         time.Duration
 }
 
 func (r *SessionRepository) Create(ctx context.Context, session *model.Session) error {

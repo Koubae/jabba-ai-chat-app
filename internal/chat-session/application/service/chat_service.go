@@ -14,16 +14,23 @@ import (
 	"time"
 )
 
-func NewChatService(repository repository.SessionRepository, broadcaster *bot.Broadcaster, botConnector *bot.AIBotConnector) *ChatService {
+func NewChatService(
+	sessionRepository repository.SessionRepository,
+	messageRepository repository.MessageRepository,
+	broadcaster *bot.Broadcaster,
+	botConnector *bot.AIBotConnector,
+) *ChatService {
 	return &ChatService{
-		repository:     repository,
-		Broadcaster:    broadcaster,
-		AIBotConnector: botConnector,
+		sessionRepository: sessionRepository,
+		messageRepository: messageRepository,
+		Broadcaster:       broadcaster,
+		AIBotConnector:    botConnector,
 	}
 }
 
 type ChatService struct {
-	repository repository.SessionRepository
+	sessionRepository repository.SessionRepository
+	messageRepository repository.MessageRepository
 	*bot.Broadcaster
 	*bot.AIBotConnector
 }
@@ -37,7 +44,7 @@ func (s *ChatService) CreateConnectionAndStartChat(ctx context.Context, conn *we
 		accessToken.ApplicationId, sessionID, accessToken.Username, accessToken.UserId)
 	fmt.Printf("Created WebSocket connection %s\n", identity)
 
-	session, _ := s.repository.Get(ctx, accessToken.ApplicationId, sessionID)
+	session, _ := s.sessionRepository.Get(ctx, accessToken.ApplicationId, sessionID)
 	if session == nil {
 		log.Printf("Session %+v does not exists for %s\n", session, identity)
 		return nil, errors.New("session does not exists, you must create one first")
@@ -65,7 +72,16 @@ func (s *ChatService) CreateConnectionAndStartChat(ctx context.Context, conn *we
 		go func() {
 			payload := createMessagePayload(accessToken.ApplicationId, sessionID, "user",
 				int(accessToken.UserId), accessToken.Username, string(message))
-			s.Broadcaster.Broadcast(accessToken.ApplicationId, sessionID, messageType, payload)
+
+			go func() {
+				err := s.messageRepository.AddMessage(context.Background(), accessToken.ApplicationId, sessionID, &payload)
+				if err != nil {
+					log.Printf("%s Error while adding message to database, message: %+v, error: %s\n", identity, message, err)
+				}
+			}()
+
+			payloadBytes, _ := json.Marshal(payload)
+			s.Broadcaster.Broadcast(accessToken.ApplicationId, sessionID, messageType, payloadBytes)
 		}()
 
 		response, err := s.AIBotConnector.SendMessage(context.Background(), accessToken.AccessToken, session.ID, string(message))
@@ -74,7 +90,8 @@ func (s *ChatService) CreateConnectionAndStartChat(ctx context.Context, conn *we
 
 			payload := createMessagePayload(accessToken.ApplicationId, sessionID, "system",
 				0, "Error", fmt.Sprintf("Error while calling AI-BOT, error: %s", err))
-			s.Broadcaster.Broadcast(accessToken.ApplicationId, sessionID, messageType, payload)
+			payloadBytes, _ := json.Marshal(payload)
+			s.Broadcaster.Broadcast(accessToken.ApplicationId, sessionID, messageType, payloadBytes)
 			continue
 		}
 
@@ -82,14 +99,23 @@ func (s *ChatService) CreateConnectionAndStartChat(ctx context.Context, conn *we
 		log.Printf("%s (Bot-Reply): %s", identity, reply)
 		payload := createMessagePayload(accessToken.ApplicationId, sessionID, "assistant",
 			0, "AI Assistant", reply)
-		s.Broadcaster.Broadcast(accessToken.ApplicationId, sessionID, messageType, payload)
+		payloadBytes, _ := json.Marshal(payload)
+
+		go func() {
+			err := s.messageRepository.AddMessage(context.Background(), accessToken.ApplicationId, sessionID, &payload)
+			if err != nil {
+				log.Printf("%s Error while adding message to database, message: %+v, error: %s\n", identity, message, err)
+			}
+		}()
+
+		s.Broadcaster.Broadcast(accessToken.ApplicationId, sessionID, messageType, payloadBytes)
 	}
 
 	return &response, err
 }
 
-func createMessagePayload(applicationID string, sessionID string, role string, userID int, username string, message string) []byte {
-	payload := model.Message{
+func createMessagePayload(applicationID string, sessionID string, role string, userID int, username string, message string) model.Message {
+	return model.Message{
 		ApplicationID: applicationID,
 		SessionID:     sessionID,
 		Role:          role,
@@ -98,6 +124,4 @@ func createMessagePayload(applicationID string, sessionID string, role string, u
 		Message:       message,
 		Timestamp:     time.Now().Unix(),
 	}
-	payloadBytes, _ := json.Marshal(payload)
-	return payloadBytes
 }
