@@ -3,6 +3,7 @@ package chat_session
 import (
 	"context"
 	"errors"
+	"github.com/Koubae/jabba-ai-chat-app/internal/chat-session/container"
 	"github.com/Koubae/jabba-ai-chat-app/internal/chat-session/infrastructure/api/routes"
 	"github.com/Koubae/jabba-ai-chat-app/pkg/common/settings"
 	"github.com/gin-gonic/gin"
@@ -28,6 +29,9 @@ func init() {
 	default:
 		gin.SetMode(gin.ReleaseMode)
 	}
+
+	container.CreateDIContainer()
+
 }
 
 func RunServer() {
