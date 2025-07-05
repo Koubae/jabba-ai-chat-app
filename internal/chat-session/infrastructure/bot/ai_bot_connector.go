@@ -55,7 +55,12 @@ func (c *AIBotConnector) Hello(ctx context.Context, accessToken string, sessionI
 }
 
 // SendMessage sends a message to the AI bot and waits for a response
-func (c *AIBotConnector) SendMessage(ctx context.Context, accessToken string, sessionID string, message string) (*AIBotResponse, error) {
+func (c *AIBotConnector) SendMessage(
+	ctx context.Context,
+	accessToken string,
+	sessionID string,
+	message string,
+) (*AIBotResponse, error) {
 	requestBody := AIBotRequest{
 		Message: message,
 	}

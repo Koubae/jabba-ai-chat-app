@@ -56,9 +56,22 @@ func (s *ChatService) CreateConnectionAndStartChat(ctx context.Context, conn *we
 			}
 			break
 		}
-
 		log.Printf("%s received: %s", identity, message)
-		s.Broadcaster.Broadcast(accessToken.ApplicationId, sessionID, messageType, message)
+
+		// Send the user a message already this is the User's original message!
+		go func() {
+			s.Broadcaster.Broadcast(accessToken.ApplicationId, sessionID, messageType, message)
+		}()
+
+		response, err := s.AIBotConnector.SendMessage(context.Background(), accessToken.AccessToken, session.ID, string(message))
+		if err != nil {
+			log.Printf("%s Error while calling AI-BOT, error: %s\n", identity, err)
+			continue
+		}
+		reply := response.Reply
+		log.Printf("%s (Bot-Reply): %s", identity, reply)
+		reply = "🤖 " + reply // TODO : we'll remove this. we need to send a JSON.. .
+		s.Broadcaster.Broadcast(accessToken.ApplicationId, sessionID, messageType, []byte(reply))
 	}
 
 	return &response, err

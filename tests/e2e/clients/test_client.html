@@ -117,9 +117,6 @@
 
         const text = input.value.trim();
         if (text) {
-            const userMsg = document.createElement('div');
-            userMsg.textContent = '🧑 ' + text;
-            messages.appendChild(userMsg);
             socket.send(text);
             input.value = '';
         }
@@ -223,7 +220,8 @@
             socket.onmessage = (event) => {
                 const msg = document.createElement('div');
                 msg.className = 'bot';
-                msg.textContent = '🤖 ' + event.data;
+                // msg.textContent = '🤖 ' + event.data;
+                msg.textContent = event.data;
                 messages.appendChild(msg);
                 messages.scrollTop = messages.scrollHeight;
             };
@@ -243,8 +241,6 @@
             console.error('Connection failed:', error);
             disconnectShow();
         }
-
-
     }
 
     function disconnectShow() {
