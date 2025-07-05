@@ -55,6 +55,7 @@ func (s *SessionService) CreateSession(ctx context.Context, sessionID string, na
 
 	err := s.repository.Create(ctx, session)
 	if err != nil {
+		log.Printf("Error while creating Session %+v, erorr: %s\n", session, err)
 		return nil, err
 	}
 

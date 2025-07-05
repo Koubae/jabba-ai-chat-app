@@ -8,7 +8,7 @@ import (
 
 type ApplicationRepository interface {
 	Create(ctx context.Context, application *model.Application) error
-	GetByID(ctx context.Context, id int64) (*model.Application, error)
+	GetByID(ctx context.Context, id string) (*model.Application, error)
 	GetByName(ctx context.Context, name string) (*model.Application, error)
 }
 
