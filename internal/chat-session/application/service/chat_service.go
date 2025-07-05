@@ -70,8 +70,13 @@ func (s *ChatService) CreateConnectionAndStartChat(ctx context.Context, conn *we
 		response, err := s.AIBotConnector.SendMessage(context.Background(), accessToken.AccessToken, session.ID, string(message))
 		if err != nil {
 			log.Printf("%s Error while calling AI-BOT, error: %s\n", identity, err)
+
+			payload := createMessagePayload(accessToken.ApplicationId, sessionID, "system",
+				0, "Error", fmt.Sprintf("Error while calling AI-BOT, error: %s", err))
+			s.Broadcaster.Broadcast(accessToken.ApplicationId, sessionID, messageType, payload)
 			continue
 		}
+
 		reply := response.Reply
 		log.Printf("%s (Bot-Reply): %s", identity, reply)
 		payload := createMessagePayload(accessToken.ApplicationId, sessionID, "assistant",
