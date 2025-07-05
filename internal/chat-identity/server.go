@@ -3,7 +3,7 @@ package chat_identity
 import (
 	"context"
 	"errors"
-	"github.com/Koubae/jabba-ai-chat-app/internal/chat-identity/di_container"
+	"github.com/Koubae/jabba-ai-chat-app/internal/chat-identity/container"
 	"github.com/Koubae/jabba-ai-chat-app/internal/chat-identity/infrastructure/api/routes"
 	"github.com/Koubae/jabba-ai-chat-app/pkg/common/settings"
 	"github.com/gin-gonic/gin"
@@ -30,7 +30,7 @@ func init() {
 		gin.SetMode(gin.ReleaseMode)
 	}
 
-	di_container.CreateDIContainer()
+	container.CreateDIContainer()
 }
 
 func RunServer() {

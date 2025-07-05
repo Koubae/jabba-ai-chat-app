@@ -1,4 +1,4 @@
-package di_container
+package container
 
 import (
 	"github.com/Koubae/jabba-ai-chat-app/internal/chat-identity/application/service"
@@ -6,12 +6,6 @@ import (
 	"github.com/Koubae/jabba-ai-chat-app/pkg/database/mysql"
 	"log"
 )
-
-type DependencyInjectionContainer struct {
-	DB *mysql.Client
-	*repository.UserRepository
-	*service.UserService
-}
 
 var Container *DependencyInjectionContainer
 
@@ -34,3 +28,11 @@ func CreateDIContainer() {
 		UserService:    userService,
 	}
 }
+
+type DependencyInjectionContainer struct {
+	DB *mysql.Client
+	*repository.UserRepository
+	*service.UserService
+}
+
+// TODO add stutdown!
