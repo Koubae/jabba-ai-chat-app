@@ -35,7 +35,7 @@ user_id=$(curl -s --request POST localhost:20000/api/v1/auth/signup -H "Content-
   echo $user_id; echo -e "\n"; \
   access_token=$(curl -s --request POST  localhost:20000/api/v1/auth/login -H "Content-Type: application/json" -d '{"username": "user_1","password": "pass","application_id": "ai-bot"}' | jq -r '.access_token'); \
   echo $access_token; echo -e "\n"; \
-  curl localhost:20000/api/v1/user/ -H "Authorization: Bearer $access_token"
+  curl localhost:20000/api/v1/user -H "Authorization: Bearer $access_token"
   
 ```
 
@@ -47,5 +47,5 @@ curl -s --request POST localhost:20000/api/v1/auth/signup -H "Content-Type: appl
 curl -s --request POST  localhost:20000/api/v1/auth/login -H "Content-Type: application/json" -d '{"username": "user_1","password": "pass","application_id": "ai-bot"}';echo
 # Get User
 access_token=$(curl -s --request POST  localhost:20000/api/v1/auth/login -H "Content-Type: application/json" -d '{"username": "user_1","password": "pass","application_id": "ai-bot"}' | jq -r '.access_token');
-curl localhost:20000/api/v1/user/ -H "Authorization: Bearer $access_token"; echo
+curl localhost:20000/api/v1/user -H "Authorization: Bearer $access_token"; echo
 ```

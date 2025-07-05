@@ -43,6 +43,6 @@ func InitRoutes(router *gin.Engine) {
 	accountControllers := controllers.AccountControllers{}
 	accountV1 := v1.Group("/user", authMiddleWare)
 	{
-		accountV1.GET("/", accountControllers.Get)
+		accountV1.GET("", accountControllers.Get)
 	}
 }
