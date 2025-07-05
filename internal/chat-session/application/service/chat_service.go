@@ -51,6 +51,7 @@ func (s *ChatService) CreateConnectionAndStartChat(ctx context.Context, conn *we
 	}
 
 	s.Broadcaster.Connect(accessToken.ApplicationId, sessionID, accessToken.UserId, accessToken.Username, conn)
+	s.sendMessageHistoryToClient(ctx, conn, accessToken, sessionID, identity)
 
 	var err error
 	response := "Goodbye"
@@ -123,5 +124,20 @@ func createMessagePayload(applicationID string, sessionID string, role string, u
 		Username:      username,
 		Message:       message,
 		Timestamp:     time.Now().Unix(),
+	}
+}
+
+func (s *ChatService) sendMessageHistoryToClient(ctx context.Context, conn *websocket.Conn, accessToken *auth.AccessToken, sessionID string, identity string) {
+	messages, err := s.messageRepository.GetMessages(ctx, accessToken.ApplicationId, sessionID)
+	if err != nil {
+		log.Printf("%s Error while getting messages from database, error: %s\n", identity, err)
+		return
+	}
+	for i := len(messages) - 1; i >= 0; i-- {
+		message := messages[i]
+		payloadBytes, _ := json.Marshal(message)
+		if err := conn.WriteMessage(1, payloadBytes); err != nil {
+			fmt.Printf("%s Error sending message to client, message: %+v, error: %s\n", identity, message, err)
+		}
 	}
 }

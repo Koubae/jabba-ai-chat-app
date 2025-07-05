@@ -2,7 +2,6 @@ package repository
 
 import (
 	"context"
-	"errors"
 	"github.com/Koubae/jabba-ai-chat-app/internal/chat-session/domain/model"
 )
 
