@@ -63,11 +63,10 @@ func (c *Client) String() string {
 	return fmt.Sprintf("Client{config: %v}", c.config.DBName)
 }
 
-func (c *Client) Shutdown(ctx context.Context) error {
+func (c *Client) Shutdown(ctx context.Context) {
 	if err := c.client.Disconnect(ctx); err != nil {
-		return fmt.Errorf("error disconnecting from MongoDB: %w\n", err)
+		log.Printf("failed to shutdown MongoDB: %v\n", err.Error())
 	}
-	return nil
 }
 
 func (c *Client) Ping(ctx context.Context) {

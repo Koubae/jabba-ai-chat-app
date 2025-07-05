@@ -50,9 +50,7 @@ func TestMain(m *testing.M) {
 	// Drop All collections
 	_ = collectionApplications.Drop(ctx)
 
-	if err := client.Shutdown(ctx); err != nil {
-		log.Fatalf("MongoDB error while shutting Down, error %v\n", err)
-	}
+	client.Shutdown(ctx)
 	log.Println("MongoDB shutdown completed")
 
 	os.Exit(code)

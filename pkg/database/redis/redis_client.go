@@ -47,6 +47,13 @@ func (c *Client) String() string {
 	return fmt.Sprintf("Client{config: %+v}", c.Config)
 }
 
+func (c *Client) Shutdown() {
+	if err := c.DB.Close(); err != nil {
+		log.Printf("failed to shutdown Redis: %v\n", err.Error())
+		return
+	}
+}
+
 func (c *Client) Ping(ctx context.Context) {
 	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()

@@ -79,5 +79,8 @@ func RunServer() {
 		log.Fatal("Server forced to shutdown: ", err)
 	}
 
+	log.Println("Server Shutdown, cleaning up resources")
+	container.ShutDown()
+
 	log.Println("Server exiting")
 }

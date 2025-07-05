@@ -56,10 +56,6 @@ func RunServer() {
 		Handler: router,
 	}
 
-	// TODO!!!!!!!
-	// shutodown / clean up di-container!
-	// TODO!!!!!!!
-
 	go func() {
 		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			log.Fatalf("Error while shutting down server, error: %s\n", err)
@@ -81,6 +77,9 @@ func RunServer() {
 	if err := srv.Shutdown(ctx); err != nil {
 		log.Fatal("Server forced to shutdown: ", err)
 	}
+
+	log.Println("Server Shutdown, cleaning up resources")
+	container.ShutDown()
 
 	log.Println("Server exiting")
 }

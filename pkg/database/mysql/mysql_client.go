@@ -59,7 +59,7 @@ func (c *Client) String() string {
 func (c *Client) Shutdown() {
 	err := c.DB.Close()
 	if err != nil {
-		log.Printf("failed to close MySQL: %v\n", err.Error())
+		log.Printf("failed to shutdown MySQL: %v\n", err.Error())
 		return
 	}
 }
