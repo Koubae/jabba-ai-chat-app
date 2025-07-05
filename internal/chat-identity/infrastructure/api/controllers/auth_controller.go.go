@@ -63,6 +63,6 @@ func (controller *AuthController) SignUpV1(c *gin.Context) {
 		return
 	}
 
-	c.JSON(200, handler.Response.User)
+	c.JSON(200, handler.Response.UserResponse)
 
 }

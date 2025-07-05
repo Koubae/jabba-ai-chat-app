@@ -65,3 +65,11 @@ init: .install-deps
 
 .install-deps:
 	go mod tidy
+
+
+
+# ============================
+# 	Management
+# ============================
+script-prepare-mongo-database:
+	go run scripts/database/prepare_mongo_database.go
