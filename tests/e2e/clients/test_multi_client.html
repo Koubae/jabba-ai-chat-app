@@ -345,6 +345,10 @@
     async function connect(clientIndex) {
         try {
             const client = clients[clientIndex];
+            if (client.socket) {
+                alert(`Client ${clientIndex + 1} is already connected`);
+                return
+            }
 
             // First authenticate
             await authenticate(clientIndex);

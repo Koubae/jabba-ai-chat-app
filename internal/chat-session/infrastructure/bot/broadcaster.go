@@ -1,6 +1,8 @@
 package bot
 
 import (
+	"errors"
+	"fmt"
 	"github.com/gorilla/websocket"
 	"log"
 	"sync"
@@ -18,6 +20,8 @@ type Connection struct {
 	SessionID     string
 	UserID        int64
 	Username      string
+	MemberID      string
+	Channel       string
 }
 
 type Broadcaster struct {
@@ -26,12 +30,27 @@ type Broadcaster struct {
 	mutex       sync.RWMutex
 }
 
-func (cm *Broadcaster) Connect(applicationID string, sessionID string, userID int64, username string, conn *websocket.Conn) {
+func (cm *Broadcaster) Connect(
+	conn *websocket.Conn,
+	applicationID string,
+	sessionID string,
+	userID int64,
+	username string,
+	memberID string,
+	channel string,
+) error {
 	cm.mutex.Lock()
 	defer cm.mutex.Unlock()
 
 	if cm.connections[applicationID] == nil {
 		cm.connections[applicationID] = make(map[string][]*Connection)
+	}
+
+	connections, _ := cm.connections[applicationID][sessionID]
+	for _, connection := range connections {
+		if connection.MemberID == memberID {
+			return errors.New(fmt.Sprintf("Member %s %s already connected to session %s", username, memberID, sessionID))
+		}
 	}
 
 	newConnection := &Connection{
@@ -40,12 +59,14 @@ func (cm *Broadcaster) Connect(applicationID string, sessionID string, userID in
 		SessionID:     sessionID,
 		UserID:        userID,
 		Username:      username,
+		MemberID:      memberID,
+		Channel:       channel,
 	}
 	cm.connections[applicationID][sessionID] = append(cm.connections[applicationID][sessionID], newConnection)
-
+	return nil
 }
 
-func (cm *Broadcaster) Disconnect(applicationID, sessionID string, conn *websocket.Conn) {
+func (cm *Broadcaster) Disconnect(conn *websocket.Conn, applicationID string, sessionID string) {
 	cm.mutex.Lock()
 	defer cm.mutex.Unlock()
 
@@ -98,7 +119,7 @@ func (cm *Broadcaster) GetSessionConnections(applicationID string, sessionID str
 	return []*Connection{}
 }
 
-func (cm *Broadcaster) Broadcast(applicationID, sessionID string, messageType int, message []byte) {
+func (cm *Broadcaster) Broadcast(applicationID string, sessionID string, messageType int, message []byte) {
 	cm.mutex.RLock()
 	connections := cm.GetSessionConnections(applicationID, sessionID)
 	cm.mutex.RUnlock()
@@ -113,6 +134,6 @@ func (cm *Broadcaster) Broadcast(applicationID, sessionID string, messageType in
 	}
 
 	for _, failedConn := range failedConnections {
-		cm.Disconnect(applicationID, sessionID, failedConn)
+		cm.Disconnect(failedConn, applicationID, sessionID)
 	}
 }

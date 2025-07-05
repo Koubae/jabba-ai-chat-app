@@ -35,7 +35,13 @@ type ChatService struct {
 	*bot.AIBotConnector
 }
 
-func (s *ChatService) CreateConnectionAndStartChat(ctx context.Context, conn *websocket.Conn, sessionID string, memberID string, channel string) (*string, error) {
+func (s *ChatService) CreateConnectionAndStartChat(
+	ctx context.Context,
+	conn *websocket.Conn,
+	sessionID string,
+	memberID string,
+	channel string,
+) (*string, error) {
 	accessToken, ok := ctx.Value("access_token").(*auth.AccessToken)
 	if !ok {
 		return nil, fmt.Errorf("access_token not found, cannot create session")
@@ -50,11 +56,17 @@ func (s *ChatService) CreateConnectionAndStartChat(ctx context.Context, conn *we
 		return nil, errors.New("session does not exists, you must create one first")
 	}
 
-	s.Broadcaster.Connect(accessToken.ApplicationId, sessionID, accessToken.UserId, accessToken.Username, conn)
-	s.sendMessageHistoryToClient(ctx, conn, accessToken, sessionID, identity)
-
-	var err error
 	response := "Goodbye"
+	var err error
+	err = s.Broadcaster.Connect(conn, accessToken.ApplicationId, sessionID, accessToken.UserId, accessToken.Username, memberID, channel)
+	if err != nil {
+		response = "Not Allow to connect"
+		log.Printf("%s Could not connect client to broadcaster, will close connection, error: %s\n", identity, err)
+		return &response, err
+	}
+	defer s.Broadcaster.Disconnect(conn, accessToken.ApplicationId, sessionID)
+
+	s.sendMessageHistoryToClient(ctx, conn, accessToken, sessionID, identity)
 
 	for {
 		messageType, message, err := conn.ReadMessage()

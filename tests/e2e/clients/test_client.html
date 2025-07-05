@@ -202,6 +202,11 @@
 
     async function connect() {
         try {
+            if (socket) {
+                alert(`Client  is already connected`);
+                return
+            }
+
             // First authenticate
             await authenticate();
 
