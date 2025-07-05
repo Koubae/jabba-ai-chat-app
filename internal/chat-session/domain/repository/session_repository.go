@@ -1,13 +1,14 @@
 package repository
 
 import (
+	"context"
 	"errors"
 	"github.com/Koubae/jabba-ai-chat-app/internal/chat-session/domain/model"
 )
 
 type SessionRepository interface {
-	Create(session *model.Session) error
-	Get(applicationID string, sessionID string) (*model.Session, error)
+	Create(ctx context.Context, session *model.Session) error
+	Get(ctx context.Context, applicationID string, sessionID string) (*model.Session, error)
 }
 
 var (

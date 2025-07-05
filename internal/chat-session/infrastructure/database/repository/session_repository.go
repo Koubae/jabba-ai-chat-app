@@ -18,37 +18,35 @@ const SessionCacheKey = "_SESSION_CACHE_KEY_"
 
 type SessionRepository struct {
 	db                 *redis.Client
-	ctx                context.Context
 	cacheServicePrefix string
 	ttlSeconds         time.Duration
 }
 
-func NewSessionRepository(db *redis.Client, ctx context.Context) *SessionRepository {
+func NewSessionRepository(db *redis.Client) *SessionRepository {
 	cacheServicePrefix := utils.GetEnvString("CACHE_SERVICE_PREFIX", "chat_session:")
 	ttlSeconds := utils.GetEnvInt("CACHE_TTL_SECONDS", 1800)
 
 	return &SessionRepository{
 		db:                 db,
-		ctx:                ctx,
 		cacheServicePrefix: cacheServicePrefix,
 		ttlSeconds:         time.Duration(ttlSeconds) * time.Second,
 	}
 }
 
-func (r *SessionRepository) Create(session *model.Session) error {
+func (r *SessionRepository) Create(ctx context.Context, session *model.Session) error {
 	document, err := json.Marshal(session)
 	if err != nil {
 		return err
 	}
 
 	key := r.getCacheKey(session.ApplicationID, session.ID)
-	return r.db.DB.Set(r.ctx, key, document, r.ttlSeconds).Err()
+	return r.db.DB.Set(ctx, key, document, r.ttlSeconds).Err()
 }
 
-func (r *SessionRepository) Get(applicationID string, sessionID string) (*model.Session, error) {
+func (r *SessionRepository) Get(ctx context.Context, applicationID string, sessionID string) (*model.Session, error) {
 	key := r.getCacheKey(applicationID, sessionID)
 
-	document, err := r.db.DB.Get(r.ctx, key).Bytes()
+	document, err := r.db.DB.Get(ctx, key).Bytes()
 	if errors.Is(err, redisadapter.Nil) || document == nil {
 		return nil, repository.ErrSessionNotFound
 	} else if err != nil {

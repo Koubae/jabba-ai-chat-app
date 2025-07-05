@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"github.com/Koubae/jabba-ai-chat-app/internal/chat-session/domain/model"
 	"github.com/Koubae/jabba-ai-chat-app/internal/chat-session/domain/repository"
 	"log"
@@ -17,7 +18,7 @@ type SessionService struct {
 	repository repository.SessionRepository
 }
 
-func (s *SessionService) CreateSession(applicationID string, sessionID string, name string) (*model.Session, error) {
+func (s *SessionService) CreateSession(ctx context.Context, applicationID string, sessionID string, name string) (*model.Session, error) {
 	var session *model.Session
 
 	session = &model.Session{
@@ -28,7 +29,7 @@ func (s *SessionService) CreateSession(applicationID string, sessionID string, n
 		Updated:       time.Now().UTC(),
 	}
 
-	err := s.repository.Create(session)
+	err := s.repository.Create(ctx, session)
 	if err != nil {
 		return nil, err
 	}
@@ -37,8 +38,8 @@ func (s *SessionService) CreateSession(applicationID string, sessionID string, n
 	return session, nil
 }
 
-func (s *SessionService) GetSession(applicationID string, sessionID string) (*model.Session, error) {
-	session, err := s.repository.Get(applicationID, sessionID)
+func (s *SessionService) GetSession(ctx context.Context, applicationID string, sessionID string) (*model.Session, error) {
+	session, err := s.repository.Get(ctx, applicationID, sessionID)
 	if err != nil {
 		return nil, err
 	}

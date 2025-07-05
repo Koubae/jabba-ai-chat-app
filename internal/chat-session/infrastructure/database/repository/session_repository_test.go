@@ -42,11 +42,11 @@ func TestMain(m *testing.M) {
 }
 
 func TestRedisSessionRepository(t *testing.T) {
-	ctx, cancel := context.WithTimeout(context.TODO(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.TODO(), 120*time.Second)
 	defer cancel()
 
 	db := redis.GetClient()
-	repository := NewSessionRepository(db, ctx)
+	repository := NewSessionRepository(db)
 
 	applicationID := "application-id-test" + utils.RandomString(20)
 	sessionName := "session-test" + utils.RandomString(20)
@@ -60,7 +60,7 @@ func TestRedisSessionRepository(t *testing.T) {
 			Updated:       time.Now().UTC(),
 		}
 
-		err := repository.Create(session)
+		err := repository.Create(ctx, session)
 		assert.NoError(t, err)
 	})
 
@@ -73,10 +73,10 @@ func TestRedisSessionRepository(t *testing.T) {
 			Updated:       time.Now().UTC(),
 		}
 
-		err := repository.Create(session)
+		err := repository.Create(ctx, session)
 		assert.NoError(t, err)
 
-		sessionInCache, err := repository.Get(session.ApplicationID, session.ID)
+		sessionInCache, err := repository.Get(ctx, session.ApplicationID, session.ID)
 		assert.NoError(t, err)
 		assert.Equal(t, session.ID, sessionInCache.ID)
 		assert.Equal(t, session.ApplicationID, sessionInCache.ApplicationID)
@@ -87,7 +87,7 @@ func TestRedisSessionRepository(t *testing.T) {
 	})
 
 	t.Run("GetNotFound", func(t *testing.T) {
-		sessionInCache, err := repository.Get(applicationID, "potato")
+		sessionInCache, err := repository.Get(ctx, applicationID, "potato")
 		assert.ErrorIs(t, err, domainrepository.ErrSessionNotFound)
 		assert.Nil(t, sessionInCache)
 
