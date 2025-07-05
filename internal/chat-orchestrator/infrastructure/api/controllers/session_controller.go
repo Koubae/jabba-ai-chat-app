@@ -94,3 +94,27 @@ func (controller *SessionController) List(c *gin.Context) {
 	c.JSON(http.StatusOK, handler.Response)
 
 }
+
+func (controller *SessionController) StartSession(c *gin.Context) {
+	var request = handlers.StartSessionRequest{}
+	if err := c.ShouldBindJSON(&request); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
+	defer cancel()
+
+	if accessToken, exists := c.Get("access_token"); exists {
+		ctx = context.WithValue(ctx, "access_token", accessToken)
+	}
+
+	handler := handlers.StartSessionHandler{Command: request, SessionService: container.Container.SessionService}
+	err := handler.Handle(ctx)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, handler.Response)
+}

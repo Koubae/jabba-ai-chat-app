@@ -9,6 +9,7 @@ import (
 type SessionRepository interface {
 	Create(ctx context.Context, session *model.Session) error
 	GetSession(ctx context.Context, applicationID string, userID string, name string) (*model.Session, error)
+	GetSessionByID(ctx context.Context, sessionID string) (*model.Session, error)
 	ListWithPagination(ctx context.Context, applicationID string, userID string, limit int64, offset int64) ([]*model.Session, error)
 }
 

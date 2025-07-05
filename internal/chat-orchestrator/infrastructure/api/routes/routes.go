@@ -47,6 +47,7 @@ func InitRoutes(router *gin.Engine) {
 		sessionV1.POST("/:name", sessionController.Create)
 		sessionV1.GET("/:name", sessionController.Get)
 		sessionV1.GET("/list", sessionController.List)
+		sessionV1.POST("/connect/start", sessionController.StartSession)
 	}
 
 }

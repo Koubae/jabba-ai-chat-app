@@ -116,3 +116,28 @@ func (h *ListSessionHandler) Handle(ctx context.Context) error {
 	h.Response = entities
 	return nil
 }
+
+type StartSessionRequest struct {
+	SessionName string `json:"session_name"`
+	MemberID    string `json:"member_id" binding:"required"`
+	Channel     string `json:"channel" binding:"required"`
+}
+
+type StartSessionResponse struct {
+	ConnectionHost string `json:"connection_host"`
+}
+
+type StartSessionHandler struct {
+	Command  StartSessionRequest
+	Response StartSessionResponse
+	*service.SessionService
+}
+
+func (h *StartSessionHandler) Handle(ctx context.Context) error {
+	connectionHost, err := h.SessionService.StartSession(ctx, h.Command.SessionName, h.Command.MemberID, h.Command.Channel)
+	if err != nil {
+		return err
+	}
+	h.Response = StartSessionResponse{ConnectionHost: connectionHost}
+	return nil
+}

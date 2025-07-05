@@ -65,7 +65,7 @@ func (r *SessionRepository) GetSession(ctx context.Context, applicationID string
 	err := r.collection.FindOne(ctx, filter).Decode(document)
 	if err != nil {
 		log.Printf("Error in GetSession ApplicationID=%s, UserID=%s, Name=%s, error: %s\n", applicationID, userID, name, err)
-		return nil, domainrepository.ErrApplicationNotFound
+		return nil, domainrepository.ErrSessionNotFound
 	}
 
 	entity := &model.Session{
@@ -78,6 +78,32 @@ func (r *SessionRepository) GetSession(ctx context.Context, applicationID string
 	}
 	return entity, nil
 
+}
+
+func (r *SessionRepository) GetSessionByID(ctx context.Context, sessionID string) (*model.Session, error) {
+	document := &collections.Session{}
+
+	documentID, err := primitive.ObjectIDFromHex(sessionID)
+	if err != nil {
+		log.Printf("Error converting string into MongoDB ObjectID, id %v, erro: %s\n", sessionID, err)
+		return nil, err
+	}
+
+	err = r.collection.FindOne(ctx, bson.M{"_id": documentID}).Decode(document)
+	if err != nil {
+		log.Printf("Error in GetSessionByID sessionID=%s, error: %s\n", sessionID, err)
+		return nil, domainrepository.ErrSessionNotFound
+	}
+
+	entity := &model.Session{
+		ID:            document.ID.Hex(),
+		ApplicationID: document.ApplicationID.Hex(),
+		UserID:        document.UserID.Hex(),
+		Name:          document.Name,
+		Created:       *document.Created,
+		Updated:       *document.Updated,
+	}
+	return entity, nil
 }
 
 func (r *SessionRepository) ListWithPagination(
