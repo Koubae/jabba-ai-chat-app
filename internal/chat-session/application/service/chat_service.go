@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/Koubae/jabba-ai-chat-app/internal/chat-session/domain/repository"
@@ -9,6 +10,7 @@ import (
 	"github.com/Koubae/jabba-ai-chat-app/pkg/auth"
 	"github.com/gorilla/websocket"
 	"log"
+	"time"
 )
 
 func NewChatService(repository repository.SessionRepository, broadcaster *bot.Broadcaster, botConnector *bot.AIBotConnector) *ChatService {
@@ -60,7 +62,9 @@ func (s *ChatService) CreateConnectionAndStartChat(ctx context.Context, conn *we
 
 		// Send the user a message already this is the User's original message!
 		go func() {
-			s.Broadcaster.Broadcast(accessToken.ApplicationId, sessionID, messageType, message)
+			payload := createMessagePayload(accessToken.ApplicationId, sessionID, "user",
+				int(accessToken.UserId), accessToken.Username, string(message))
+			s.Broadcaster.Broadcast(accessToken.ApplicationId, sessionID, messageType, payload)
 		}()
 
 		response, err := s.AIBotConnector.SendMessage(context.Background(), accessToken.AccessToken, session.ID, string(message))
@@ -70,9 +74,34 @@ func (s *ChatService) CreateConnectionAndStartChat(ctx context.Context, conn *we
 		}
 		reply := response.Reply
 		log.Printf("%s (Bot-Reply): %s", identity, reply)
-		reply = "🤖 " + reply // TODO : we'll remove this. we need to send a JSON.. .
-		s.Broadcaster.Broadcast(accessToken.ApplicationId, sessionID, messageType, []byte(reply))
+		payload := createMessagePayload(accessToken.ApplicationId, sessionID, "assistant",
+			0, "AI Assistant", reply)
+		s.Broadcaster.Broadcast(accessToken.ApplicationId, sessionID, messageType, payload)
 	}
 
 	return &response, err
+}
+
+type Message struct {
+	ApplicationID string `json:"application_id"`
+	SessionID     string `json:"session_id"`
+	Role          string `json:"role"`
+	UserID        int    `json:"user_id"`
+	Username      string `json:"username"`
+	Message       string `json:"message"`
+	Timestamp     int64  `json:"timestamp"`
+}
+
+func createMessagePayload(applicationID string, sessionID string, role string, userID int, username string, message string) []byte {
+	payload := Message{
+		ApplicationID: applicationID,
+		SessionID:     sessionID,
+		Role:          role,
+		UserID:        userID,
+		Username:      username,
+		Message:       message,
+		Timestamp:     time.Now().Unix(),
+	}
+	payloadBytes, _ := json.Marshal(payload)
+	return payloadBytes
 }

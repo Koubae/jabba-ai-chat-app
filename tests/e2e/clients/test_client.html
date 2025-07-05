@@ -218,12 +218,19 @@
             };
 
             socket.onmessage = (event) => {
-                const msg = document.createElement('div');
-                msg.className = 'bot';
-                // msg.textContent = '🤖 ' + event.data;
-                msg.textContent = event.data;
-                messages.appendChild(msg);
-                messages.scrollTop = messages.scrollHeight;
+                try {
+                    // Try to parse as JSON first
+                    const messageData = JSON.parse(event.data);
+                    displayMessage(messageData);
+                } catch (e) {
+                    // Fallback to plain text for backward compatibility
+                    console.log('Received plain text message:', event.data);
+                    const msg = document.createElement('div');
+                    msg.className = 'message';
+                    msg.textContent = event.data;
+                    messages.appendChild(msg);
+                    messages.scrollTop = messages.scrollHeight;
+                }
             };
 
             socket.onclose = () => {
@@ -242,6 +249,38 @@
             disconnectShow();
         }
     }
+
+    function displayMessage(messageData) {
+        const msg = document.createElement('div');
+        msg.className = `message ${messageData.role}`;
+
+        let emoji = '';
+        switch(messageData.role) {
+            case 'user':
+                emoji = '🧑';
+                break;
+            case 'assistant':
+                emoji = '🤖';
+                break;
+            case 'system':
+                emoji = '⚙️';
+                break;
+            default:
+                emoji = '💬';
+        }
+
+        msg.innerHTML = `
+            <strong>${emoji} ${messageData.username || messageData.role}:</strong>
+            ${messageData.message}
+            <small style="color: #666; margin-left: 10px;">
+                ${messageData.timestamp ? new Date(messageData.timestamp * 1000).toLocaleTimeString() : ''}
+            </small>
+        `;
+
+        messages.appendChild(msg);
+        messages.scrollTop = messages.scrollHeight;
+    }
+
 
     function disconnectShow() {
         connectionStatusWrapper.classList.remove('connected');
