@@ -93,6 +93,9 @@
     const connectionStatusWrapper = document.querySelector('.connection-status');
     let sessionID = inputSessionId.value;
 
+    const MEMBER_ID = "bot-member"
+    const CHANNEL = "fake-client"
+
     // chat-identity
     const AUTH_ENDPOINT = 'http://localhost:20000/api/v1/auth/login';
 
@@ -209,7 +212,7 @@
             sessionID = inputSessionId.value;
 
             // Option 1: Add JWT as query parameter
-            const wsUrl = `${WS_ENDPOINT}/${sessionID}?access_token=${accessToken}`;
+            const wsUrl = `${WS_ENDPOINT}/${sessionID}?access_token=${accessToken}&member_id=${MEMBER_ID}&channel=${CHANNEL}`;
             socket = new WebSocket(wsUrl);
 
             socket.onopen = () => {

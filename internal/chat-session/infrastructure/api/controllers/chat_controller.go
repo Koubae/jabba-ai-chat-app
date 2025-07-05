@@ -23,6 +23,18 @@ var upgrader = websocket.Upgrader{
 func (controller *ChatController) CreateConnection(c *gin.Context) {
 	sessionID := c.Param("session_id")
 
+	memberID := c.Query("member_id")
+	channel := c.Query("channel")
+
+	// Validate required query parameters
+	if memberID == "" {
+		c.JSON(400, gin.H{"error": "member_id query parameter is required"})
+		return
+	} else if channel == "" {
+		c.JSON(400, gin.H{"error": "channel query parameter is required"})
+		return
+	}
+
 	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
 	defer cancel()
 
@@ -46,6 +58,6 @@ func (controller *ChatController) CreateConnection(c *gin.Context) {
 	}(conn)
 
 	chatService := container.Container.ChatService
-	response, err := chatService.CreateConnectionAndStartChat(ctx, conn, sessionID)
+	response, err := chatService.CreateConnectionAndStartChat(ctx, conn, sessionID, memberID, channel)
 	log.Printf("Chat connection closed, response: %v, error: %v\n", *response, err)
 }

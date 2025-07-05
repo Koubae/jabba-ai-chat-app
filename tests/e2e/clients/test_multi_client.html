@@ -191,6 +191,7 @@
     const AUTH_ENDPOINT = 'http://localhost:20000/api/v1/auth/login';
     const WS_ENDPOINT = `ws://localhost:20002/api/v1/chat/ws/bot/create-connection`;
     const SESSION_CREATE_ENDPOINT = 'http://localhost:20002/api/v1/session/create';
+    const CHANNEL = "fake-client"
 
     const clients = Array(4).fill(null).map(() => ({
         socket: null,
@@ -351,9 +352,11 @@
             // Then create session
             await createSession(clientIndex);
 
+            const memberID = `member_${clientIndex + 1}`;
+
             // Finally establish WebSocket connection with JWT token
             const sessionID = client.elements.sessionId.value;
-            const wsUrl = `${WS_ENDPOINT}/${sessionID}?access_token=${client.accessToken}`;
+            const wsUrl = `${WS_ENDPOINT}/${sessionID}?access_token=${client.accessToken}&member_id=${memberID}&channel=${CHANNEL}`;
             client.socket = new WebSocket(wsUrl);
 
             client.socket.onopen = () => {

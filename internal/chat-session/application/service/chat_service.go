@@ -35,13 +35,13 @@ type ChatService struct {
 	*bot.AIBotConnector
 }
 
-func (s *ChatService) CreateConnectionAndStartChat(ctx context.Context, conn *websocket.Conn, sessionID string) (*string, error) {
+func (s *ChatService) CreateConnectionAndStartChat(ctx context.Context, conn *websocket.Conn, sessionID string, memberID string, channel string) (*string, error) {
 	accessToken, ok := ctx.Value("access_token").(*auth.AccessToken)
 	if !ok {
 		return nil, fmt.Errorf("access_token not found, cannot create session")
 	}
-	identity := fmt.Sprintf("[%s][%s][%s (%d)] (WebSocket)",
-		accessToken.ApplicationId, sessionID, accessToken.Username, accessToken.UserId)
+	identity := fmt.Sprintf("[%s][%s]> Username=%s UserID=%d, Member=%s, Channel=%s (WebSocket)",
+		accessToken.ApplicationId, sessionID, accessToken.Username, accessToken.UserId, memberID, channel)
 	fmt.Printf("Created WebSocket connection %s\n", identity)
 
 	session, _ := s.sessionRepository.Get(ctx, accessToken.ApplicationId, sessionID)
@@ -72,7 +72,7 @@ func (s *ChatService) CreateConnectionAndStartChat(ctx context.Context, conn *we
 		// Send the user a message already this is the User's original message!
 		go func() {
 			payload := createMessagePayload(accessToken.ApplicationId, sessionID, "user",
-				int(accessToken.UserId), accessToken.Username, string(message))
+				int(accessToken.UserId), accessToken.Username, memberID, channel, string(message))
 
 			go func() {
 				err := s.messageRepository.AddMessage(context.Background(), accessToken.ApplicationId, sessionID, &payload)
@@ -90,7 +90,7 @@ func (s *ChatService) CreateConnectionAndStartChat(ctx context.Context, conn *we
 			log.Printf("%s Error while calling AI-BOT, error: %s\n", identity, err)
 
 			payload := createMessagePayload(accessToken.ApplicationId, sessionID, "system",
-				0, "Error", fmt.Sprintf("Error while calling AI-BOT, error: %s", err))
+				0, "Error", "system", "server", fmt.Sprintf("Error while calling AI-BOT, error: %s", err))
 			payloadBytes, _ := json.Marshal(payload)
 			s.Broadcaster.Broadcast(accessToken.ApplicationId, sessionID, messageType, payloadBytes)
 			continue
@@ -99,7 +99,7 @@ func (s *ChatService) CreateConnectionAndStartChat(ctx context.Context, conn *we
 		reply := response.Reply
 		log.Printf("%s (Bot-Reply): %s", identity, reply)
 		payload := createMessagePayload(accessToken.ApplicationId, sessionID, "assistant",
-			0, "AI Assistant", reply)
+			0, "AI Assistant", "bot", "server", reply)
 		payloadBytes, _ := json.Marshal(payload)
 
 		go func() {
@@ -115,7 +115,7 @@ func (s *ChatService) CreateConnectionAndStartChat(ctx context.Context, conn *we
 	return &response, err
 }
 
-func createMessagePayload(applicationID string, sessionID string, role string, userID int, username string, message string) model.Message {
+func createMessagePayload(applicationID string, sessionID string, role string, userID int, username string, memberID string, channel string, message string) model.Message {
 	return model.Message{
 		ApplicationID: applicationID,
 		SessionID:     sessionID,
@@ -124,6 +124,10 @@ func createMessagePayload(applicationID string, sessionID string, role string, u
 		Username:      username,
 		Message:       message,
 		Timestamp:     time.Now().Unix(),
+		Member: model.Member{
+			MemberID: memberID,
+			Channel:  channel,
+		},
 	}
 }
 
