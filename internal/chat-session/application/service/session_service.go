@@ -38,6 +38,12 @@ func (s *SessionService) CreateSession(ctx context.Context, sessionID string, na
 		Updated:       time.Now().UTC(),
 	}
 
+	sessionInCache, _ := s.repository.Get(ctx, session.ApplicationID, session.ID)
+	if sessionInCache != nil {
+		log.Printf("Session %+v already exists in cache, returning it\n", session)
+		return sessionInCache, nil
+	}
+
 	go func() {
 		response, err := s.AIBotConnector.Hello(context.Background(), accessToken.AccessToken, session.ID)
 		if err != nil {
