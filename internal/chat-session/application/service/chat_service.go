@@ -81,6 +81,8 @@ func (s *ChatService) CreateConnectionAndStartChat(
 const MaxExponentialBackoffRetries = 10
 const ExponentialBackoffBaseSleepMs = 100
 
+var BackOffAttemptExceeded = errors.New("BACK_OFF_ATTEMPTS_EXCEEDED")
+
 type ChatHandler struct {
 	conn        *websocket.Conn
 	accessToken string
@@ -100,49 +102,34 @@ func (h *ChatHandler) Handle(ctx context.Context, broadcaster *bot.Broadcaster, 
 
 	response := "Goodbye"
 	var err error
+	var aiResponse *bot.AIBotResponse
 	for {
-		messageType, message, err := h.RecV()
+		messageType, message, err := h.recV()
 		if err != nil {
 			break
 		}
 
 		// Send the user a message already this is the User's original message!
-		h.BroadcastUserPrompt(message, messageRepository, broadcaster, messageType)
-		response, err := h.SendPromptToAIBot(broadcaster, botConnector, messageType, string(message))
-		if err != nil {
-			exponentialBackOffError := h.exponentialBackOff()
-			if exponentialBackOffError != nil {
-				h.BroadcastSystemMessage(broadcaster, fmt.Sprintf("AI-BOT Is not available at this moment, please try again later"))
+		h.broadcastUserPrompt(message, messageRepository, broadcaster, messageType)
+		if aiResponse, err = h.sendPromptToAIBot(broadcaster, botConnector, string(message)); err != nil {
+			if exponentialBackOffError := h.exponentialBackOff(broadcaster); exponentialBackOffError != nil {
 				break
 			}
 			continue
 		}
 		h.exponentialBackOffAttempts = 0
-
-		reply := response.Reply
-		log.Printf("%s (Bot-Reply): %s", h, reply)
-		payload := h.createMessagePayload("assistant",
-			0, "AI Assistant", "bot", "server", reply)
-		payloadBytes, _ := json.Marshal(payload)
-
-		go func() {
-			err := messageRepository.AddMessage(context.Background(), h.Session.ApplicationID, h.Session.ID, &payload)
-			if err != nil {
-				log.Printf("%s Error while adding message to database, message: %+v, error: %s\n", h, message, err)
-			}
-		}()
-
-		broadcaster.Broadcast(h.Session.ApplicationID, h.Session.ID, messageType, payloadBytes)
+		h.broadcastAIBotReply(aiResponse, messageRepository, message, broadcaster, messageType)
 	}
 
 	return response, err
 }
 
-func (h *ChatHandler) exponentialBackOff() error {
+func (h *ChatHandler) exponentialBackOff(broadcaster *bot.Broadcaster) error {
 	h.exponentialBackOffAttempts++
 	if h.exponentialBackOffAttempts > MaxExponentialBackoffRetries-1 {
 		fmt.Printf("%s Exponential Backoff exceeded limit of %d, giving up\n", h, MaxExponentialBackoffRetries)
-		return errors.New(fmt.Sprintf("exponential backoff exceeded limit of %d", MaxExponentialBackoffRetries))
+		h.broadcastSystemMessage(broadcaster, fmt.Sprintf("AI-BOT Is not available at this moment, please try again later"))
+		return BackOffAttemptExceeded
 	}
 	// Simple exponential: 100ms, 200ms, 400ms, 800ms...
 	delay := time.Duration(ExponentialBackoffBaseSleepMs*(1<<h.exponentialBackOffAttempts)) * time.Millisecond
@@ -153,7 +140,22 @@ func (h *ChatHandler) exponentialBackOff() error {
 	return nil
 }
 
-func (h *ChatHandler) BroadcastUserPrompt(message []byte, messageRepository repository.MessageRepository, broadcaster *bot.Broadcaster, messageType int) {
+func (h *ChatHandler) recV() (int, []byte, error) {
+	messageType, message, err := h.conn.ReadMessage()
+	if err != nil {
+		if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure, websocket.CloseNoStatusReceived) {
+			log.Printf("%s Error reading message | Terminating connection, error: %s\n", h, err)
+			err = errors.New("unexpected error while reading message")
+		} else {
+			log.Printf("%s client closed connection | Terminating connection\n", h)
+		}
+		return -1, []byte{}, err
+	}
+	log.Printf("%s received: %s", h.identity, message)
+	return messageType, message, err
+}
+
+func (h *ChatHandler) broadcastUserPrompt(message []byte, messageRepository repository.MessageRepository, broadcaster *bot.Broadcaster, messageType int) {
 	go func() {
 		payload := h.createMessagePayload("user",
 			h.Member.UserID, h.Member.Username, h.Member.MemberID, h.Member.Channel, string(message))
@@ -170,19 +172,35 @@ func (h *ChatHandler) BroadcastUserPrompt(message []byte, messageRepository repo
 	}()
 }
 
-func (h *ChatHandler) RecV() (int, []byte, error) {
-	messageType, message, err := h.conn.ReadMessage()
-	if err != nil {
-		if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure, websocket.CloseNoStatusReceived) {
-			log.Printf("%s Error reading message | Terminating connection, error: %s\n", h, err)
-			err = errors.New("unexpected error while reading message")
-		} else {
-			log.Printf("%s client closed connection | Terminating connection\n", h)
+func (h *ChatHandler) broadcastAIBotReply(response *bot.AIBotResponse, messageRepository repository.MessageRepository, message []byte, broadcaster *bot.Broadcaster, messageType int) {
+	reply := response.Reply
+	log.Printf("%s (Bot-Reply): %s", h, reply)
+	payload := h.createMessagePayload("assistant",
+		0, "AI Assistant", "bot", "server", reply)
+	payloadBytes, _ := json.Marshal(payload)
+
+	go func() {
+		err := messageRepository.AddMessage(context.Background(), h.Session.ApplicationID, h.Session.ID, &payload)
+		if err != nil {
+			log.Printf("%s Error while adding message to database, message: %+v, error: %s\n", h, message, err)
 		}
-		return -1, []byte{}, err
+	}()
+
+	broadcaster.Broadcast(h.Session.ApplicationID, h.Session.ID, messageType, payloadBytes)
+}
+
+func (h *ChatHandler) sendPromptToAIBot(broadcaster *bot.Broadcaster, botConnector *bot.AIBotConnector, message string) (*bot.AIBotResponse, error) {
+	response, err := botConnector.SendMessage(context.Background(), h.accessToken, h.Session.ID, message)
+	if err == nil {
+		return response, nil
 	}
-	log.Printf("%s received: %s", h.identity, message)
-	return messageType, message, err
+
+	go func() {
+		log.Printf("%s Error while calling AI-BOT, error: %s\n", h, err)
+		h.broadcastSystemMessage(broadcaster, fmt.Sprintf("Error while calling AI-BOT, error: %s", err))
+	}()
+	return nil, err
+
 }
 
 func (h *ChatHandler) sendMessageHistoryToClient(ctx context.Context, messageRepository repository.MessageRepository) {
@@ -200,18 +218,11 @@ func (h *ChatHandler) sendMessageHistoryToClient(ctx context.Context, messageRep
 	}
 }
 
-func (h *ChatHandler) SendPromptToAIBot(broadcaster *bot.Broadcaster, botConnector *bot.AIBotConnector, messageType int, message string) (*bot.AIBotResponse, error) {
-	response, err := botConnector.SendMessage(context.Background(), h.accessToken, h.Session.ID, message)
-	if err == nil {
-		return response, nil
-	}
-
-	go func() {
-		log.Printf("%s Error while calling AI-BOT, error: %s\n", h, err)
-		h.BroadcastSystemMessage(broadcaster, fmt.Sprintf("Error while calling AI-BOT, error: %s", err))
-	}()
-	return nil, err
-
+func (h *ChatHandler) broadcastSystemMessage(broadcaster *bot.Broadcaster, message string) {
+	payload := h.createMessagePayload("system",
+		0, "System", "system", "server", message)
+	payloadBytes, _ := json.Marshal(payload)
+	broadcaster.Broadcast(h.Session.ApplicationID, h.Session.ID, 1, payloadBytes)
 }
 
 func (h *ChatHandler) createMessagePayload(role string, userID int, username string, memberID string, channel string, message string) model.Message {
@@ -228,11 +239,4 @@ func (h *ChatHandler) createMessagePayload(role string, userID int, username str
 			Channel:  channel,
 		},
 	}
-}
-
-func (h *ChatHandler) BroadcastSystemMessage(broadcaster *bot.Broadcaster, message string) {
-	payload := h.createMessagePayload("system",
-		0, "System", "system", "server", message)
-	payloadBytes, _ := json.Marshal(payload)
-	broadcaster.Broadcast(h.Session.ApplicationID, h.Session.ID, 1, payloadBytes)
 }
