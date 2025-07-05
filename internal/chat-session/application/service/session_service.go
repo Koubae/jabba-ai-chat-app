@@ -38,15 +38,16 @@ func (s *SessionService) CreateSession(ctx context.Context, sessionID string, na
 		Updated:       time.Now().UTC(),
 	}
 
-	// Call -- AI-BOT
-	response, err := s.AIBotConnector.Hello(ctx, accessToken.AccessToken, session.ID)
-	if err != nil {
-		log.Printf("Error while calling AI-BOT, error: %s\n", err)
-	} else {
-		log.Printf("Response from AI-BOT: %+v\n", response)
-	}
+	go func() {
+		response, err := s.AIBotConnector.Hello(context.Background(), accessToken.AccessToken, session.ID)
+		if err != nil {
+			log.Printf("Error while calling AI-BOT, error: %s\n", err)
+		} else {
+			log.Printf("Hello Response from AI-BOT (session-created): %+v\n", response)
+		}
+	}()
 
-	err = s.repository.Create(ctx, session)
+	err := s.repository.Create(ctx, session)
 	if err != nil {
 		return nil, err
 	}
