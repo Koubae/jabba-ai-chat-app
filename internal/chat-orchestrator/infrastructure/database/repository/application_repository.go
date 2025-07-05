@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"fmt"
 	"github.com/Koubae/jabba-ai-chat-app/internal/chat-orchestrator/domain/application/model"
 	domainrepository "github.com/Koubae/jabba-ai-chat-app/internal/chat-orchestrator/domain/application/repository"
 	"github.com/Koubae/jabba-ai-chat-app/internal/chat-orchestrator/infrastructure/database/collections"
@@ -9,6 +10,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 	"log"
 )
 
@@ -86,5 +88,29 @@ func (r *ApplicationRepository) GetByName(ctx context.Context, name string) (*mo
 		Updated: *document.Updated,
 	}
 	return entity, nil
+
+}
+
+func (r *ApplicationRepository) ListWithPagination(ctx context.Context, limit, offset int64) ([]*model.Application, error) {
+	findOptions := options.Find()
+	findOptions.SetSkip(offset)
+	findOptions.SetLimit(limit)
+	findOptions.SetSort(bson.D{{"_id", 1}})
+	cursor, err := r.collection.Find(ctx, bson.D{}, findOptions)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list applications: %w", err)
+	}
+	defer func(cursor *mongo.Cursor, ctx context.Context) {
+		err := cursor.Close(ctx)
+		if err != nil {
+			log.Printf("Error while closing cursor (during Applpication ListWithPagination), error: %s\n", err)
+		}
+	}(cursor, ctx)
+
+	var applications []*model.Application
+	if err = cursor.All(ctx, &applications); err != nil {
+		return nil, fmt.Errorf("failed to decode applications: %w", err)
+	}
+	return applications, nil
 
 }

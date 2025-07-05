@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"fmt"
 	"github.com/Koubae/jabba-ai-chat-app/internal/chat-orchestrator/domain/application/model"
 	domainrepository "github.com/Koubae/jabba-ai-chat-app/internal/chat-orchestrator/domain/application/repository"
 	"github.com/Koubae/jabba-ai-chat-app/internal/chat-orchestrator/infrastructure/database/collections"
@@ -69,6 +70,45 @@ func TestApplicationRepository(t *testing.T) {
 
 	applicationID := applicationOne.ID
 
+	t.Run("ListWithPagination", func(t *testing.T) {
+		limit := int64(10)
+		offset := int64(0)
+
+		applicationsExpected := make([]*model.Application, 0, 10)
+		for i := 0; i < 10; i++ {
+			name := fmt.Sprintf("application-test-%s-%d", "application-test", i)
+			application := &model.Application{Name: name}
+			err := repository.Create(ctx, application)
+			assert.NoError(t, err)
+			applicationsExpected = append(applicationsExpected, application)
+		}
+
+		applications, err := repository.ListWithPagination(ctx, limit, offset)
+		assert.NoError(t, err)
+		assert.Equal(t, len(applicationsExpected), len(applications))
+
+	})
+
+	t.Run("ListWithPaginationNotFoundPassedOffset", func(t *testing.T) {
+		limit := int64(10)
+		offset := int64(50)
+
+		applicationsExpected := make([]*model.Application, 0, 10)
+		idStartFrom := 20
+		for i := 0; i < 10; i++ {
+			name := fmt.Sprintf("application-test-%s-%d", "application-test", i+idStartFrom)
+			application := &model.Application{Name: name}
+			err := repository.Create(ctx, application)
+			assert.NoError(t, err)
+			applicationsExpected = append(applicationsExpected, application)
+		}
+
+		applications, err := repository.ListWithPagination(ctx, limit, offset)
+		assert.NoError(t, err)
+		assert.Equal(t, 0, len(applications))
+
+	})
+
 	t.Run("Create", func(t *testing.T) {
 		name := "application-test" + utils.RandomString(10)
 		application := &model.Application{Name: name}
@@ -119,4 +159,5 @@ func TestApplicationRepository(t *testing.T) {
 			assert.Nil(t, application)
 		})
 	})
+
 }
