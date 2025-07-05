@@ -102,20 +102,7 @@ func (h *ChatHandler) Handle(ctx context.Context, broadcaster *bot.Broadcaster, 
 		}
 
 		// Send the user a message already this is the User's original message!
-		go func() {
-			payload := h.createMessagePayload("user",
-				h.Member.UserID, h.Member.Username, h.Member.MemberID, h.Member.Channel, string(message))
-
-			go func() {
-				err := messageRepository.AddMessage(context.Background(), h.Session.ApplicationID, h.Session.ID, &payload)
-				if err != nil {
-					log.Printf("%s Error while adding message to database, message: %+v, error: %s\n", h, message, err)
-				}
-			}()
-
-			payloadBytes, _ := json.Marshal(payload)
-			broadcaster.Broadcast(h.Session.ApplicationID, h.Session.ID, messageType, payloadBytes)
-		}()
+		h.BroadcastUserPrompt(message, messageRepository, broadcaster, messageType)
 
 		response, err := botConnector.SendMessage(context.Background(), h.accessToken, h.Session.ID, string(message))
 		if err != nil {
@@ -145,6 +132,23 @@ func (h *ChatHandler) Handle(ctx context.Context, broadcaster *bot.Broadcaster, 
 	}
 
 	return response, err
+}
+
+func (h *ChatHandler) BroadcastUserPrompt(message []byte, messageRepository repository.MessageRepository, broadcaster *bot.Broadcaster, messageType int) {
+	go func() {
+		payload := h.createMessagePayload("user",
+			h.Member.UserID, h.Member.Username, h.Member.MemberID, h.Member.Channel, string(message))
+
+		go func() {
+			err := messageRepository.AddMessage(context.Background(), h.Session.ApplicationID, h.Session.ID, &payload)
+			if err != nil {
+				log.Printf("%s Error while adding message to database, message: %+v, error: %s\n", h, message, err)
+			}
+		}()
+
+		payloadBytes, _ := json.Marshal(payload)
+		broadcaster.Broadcast(h.Session.ApplicationID, h.Session.ID, messageType, payloadBytes)
+	}()
 }
 
 func (h *ChatHandler) RecV() (int, []byte, error) {
