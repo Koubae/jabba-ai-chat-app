@@ -26,3 +26,24 @@ func (h *CreateSessionHandler) Handle(ctx context.Context) error {
 	h.Response = session
 	return nil
 }
+
+type GetSessionRequest struct {
+	ApplicationID string `json:"application_id"`
+	IdentityID    int64  `json:"identity_id"`
+	Name          string `json:"name"`
+}
+
+type GetSessionHandler struct {
+	Command  GetSessionRequest
+	Response *model.Session
+	*service.SessionService
+}
+
+func (h *GetSessionHandler) Handle(ctx context.Context) error {
+	session, err := h.SessionService.Get(ctx, h.Command.ApplicationID, h.Command.IdentityID, h.Command.Name)
+	if err != nil {
+		return err
+	}
+	h.Response = session
+	return nil
+}

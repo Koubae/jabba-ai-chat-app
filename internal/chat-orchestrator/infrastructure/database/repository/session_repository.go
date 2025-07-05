@@ -51,18 +51,20 @@ func (r *SessionRepository) Create(ctx context.Context, session *model.Session) 
 	return nil
 }
 
-func (r *SessionRepository) GetSession(ctx context.Context, id string) (*model.Session, error) {
+func (r *SessionRepository) GetSession(ctx context.Context, applicationID string, userID string, name string) (*model.Session, error) {
+	applicationIDObj, _ := primitive.ObjectIDFromHex(applicationID)
+	userIDObj, _ := primitive.ObjectIDFromHex(userID)
+
 	document := &collections.Session{}
 
-	documentID, err := primitive.ObjectIDFromHex(id)
-	if err != nil {
-		log.Printf("Error converting string into MongoDB ObjectID, id %v, erro: %s\n", id, err)
-		return nil, err
+	filter := bson.D{
+		{"application_id", applicationIDObj},
+		{"user_id", userIDObj},
+		{"name", name},
 	}
-
-	err = r.collection.FindOne(ctx, bson.M{"_id": documentID}).Decode(document)
+	err := r.collection.FindOne(ctx, filter).Decode(document)
 	if err != nil {
-		log.Printf("Error in GetByID with id %v, error: %s\n", id, err)
+		log.Printf("Error in GetSession ApplicationID=%s, UserID=%s, Name=%s, error: %s\n", applicationID, userID, name, err)
 		return nil, domainrepository.ErrApplicationNotFound
 	}
 

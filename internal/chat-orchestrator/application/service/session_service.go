@@ -48,10 +48,16 @@ func (s *SessionService) Create(ctx context.Context, applicationID string, Ident
 	return session, nil
 }
 
-func (s *SessionService) Get(ctx context.Context, sessionID string) (*model.Session, error) {
-	session, err := s.repository.GetSession(ctx, sessionID)
+func (s *SessionService) Get(ctx context.Context, applicationID string, IdentityID int64, name string) (*model.Session, error) {
+	UserID := fmt.Sprintf("todo-%d", IdentityID)
+	application, err := s.ApplicationService.Get(ctx, applicationID)
 	if err != nil {
-		log.Printf("Session Not Found %s not found\n", sessionID)
+		log.Printf("Application %s not found\n", applicationID)
+		return nil, err
+	}
+
+	session, err := s.repository.GetSession(ctx, application.ID, UserID, name)
+	if err != nil {
 		return nil, err
 	}
 
