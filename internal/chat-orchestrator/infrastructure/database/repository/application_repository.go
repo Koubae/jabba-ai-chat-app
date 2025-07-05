@@ -29,7 +29,10 @@ func (r *ApplicationRepository) Create(ctx context.Context, application *model.A
 	document.OnCreate()
 
 	result, err := r.collection.InsertOne(ctx, application)
-	if err != nil {
+	if r.db.IsDuplicateKeyError(err) {
+		log.Printf("Application %+v already exists!, error: %s\n", document, err)
+		return domainrepository.ErrApplicationAlreadyExists
+	} else if err != nil {
 		log.Printf("Error while creating application %+v, error: %s\n", document, err)
 		return domainrepository.ErrApplicationOnCreate
 	}

@@ -13,6 +13,7 @@ type ApplicationRepository interface {
 }
 
 var (
-	ErrApplicationOnCreate = errors.New("APPLICATION_ERROR_ON_CREATE")
-	ErrApplicationNotFound = errors.New("APPLICATION_NOT_FOUND")
+	ErrApplicationAlreadyExists = errors.New("APPLICATION_ALREADY_EXISTS")
+	ErrApplicationOnCreate      = errors.New("APPLICATION_ERROR_ON_CREATE")
+	ErrApplicationNotFound      = errors.New("APPLICATION_NOT_FOUND")
 )

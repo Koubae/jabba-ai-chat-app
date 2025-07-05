@@ -1,0 +1,21 @@
+### Login V1
+# access_token=$(curl -s --request POST  localhost:20000/api/v1/auth/login -H "Content-Type: application/json" -d '{"username": "user_1","password": "pass","application_id": "ai-bot"}' | jq -r '.access_token'); echo $access_token
+
+POST localhost:20000/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "application_id": "ai-bot",
+  "username": "ai-bot",
+  "password": "pass"
+}
+
+> {%
+    // Save the token to an environment variable
+    client.global.set("access_token", response.body.access_token);
+    client.global.set("username", "ai-bot")
+%}
+
+### Create Session V1
+POST localhost:20001/api/v1/application/application_test_{{$timestamp}}_{{$randomInt}}
+Authorization: Bearer {{access_token}}

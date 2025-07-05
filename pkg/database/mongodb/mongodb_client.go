@@ -2,6 +2,7 @@ package mongodb
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -134,4 +135,16 @@ func (c *Client) CreateIndex(collection *mongo.Collection, ctx context.Context, 
 
 	_, err := collection.Indexes().CreateOne(ctx, indexModel)
 	return err
+}
+
+func (c *Client) IsDuplicateKeyError(err error) bool {
+	var writeException mongo.WriteException
+	if errors.As(err, &writeException) {
+		for _, we := range writeException.WriteErrors {
+			if we.Code == 11000 {
+				return true
+			}
+		}
+	}
+	return false
 }

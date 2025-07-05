@@ -20,7 +20,7 @@ func (r *CreateSessionRequest) Validate() error {
 	if r.SessionID == "" {
 		return errors.New("session_id is required")
 	} else if r.Name == "" {
-		return errors.New("Name is required")
+		return errors.New("name is required")
 	}
 
 	return nil

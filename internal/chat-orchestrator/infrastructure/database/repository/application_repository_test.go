@@ -89,7 +89,8 @@ func TestApplicationRepository(t *testing.T) {
 
 		application2 := &model.Application{Name: name}
 		err2 := repository.Create(ctx, application2)
-		assert.ErrorIs(t, err2, domainrepository.ErrApplicationOnCreate)
+		assert.Error(t, err2)
+		assert.ErrorIs(t, err2, domainrepository.ErrApplicationAlreadyExists)
 
 	})
 
