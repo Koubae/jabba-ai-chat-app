@@ -25,7 +25,7 @@ type SessionService struct {
 
 func (s *SessionService) Create(ctx context.Context, applicationID string, IdentityID int64, name string) (*model.Session, error) {
 
-	UserID := fmt.Sprintf("todo-%d", IdentityID)
+	userID := fmt.Sprintf("todo-%d", IdentityID)
 
 	application, err := s.ApplicationService.Get(ctx, applicationID)
 	if err != nil {
@@ -35,7 +35,7 @@ func (s *SessionService) Create(ctx context.Context, applicationID string, Ident
 
 	session := &model.Session{
 		ApplicationID: application.ID,
-		UserID:        UserID,
+		UserID:        userID,
 		Name:          name,
 	}
 	err = s.repository.Create(ctx, session)
@@ -49,14 +49,14 @@ func (s *SessionService) Create(ctx context.Context, applicationID string, Ident
 }
 
 func (s *SessionService) Get(ctx context.Context, applicationID string, IdentityID int64, name string) (*model.Session, error) {
-	UserID := fmt.Sprintf("todo-%d", IdentityID)
+	userID := fmt.Sprintf("todo-%d", IdentityID)
 	application, err := s.ApplicationService.Get(ctx, applicationID)
 	if err != nil {
 		log.Printf("Application %s not found\n", applicationID)
 		return nil, err
 	}
 
-	session, err := s.repository.GetSession(ctx, application.ID, UserID, name)
+	session, err := s.repository.GetSession(ctx, application.ID, userID, name)
 	if err != nil {
 		return nil, err
 	}
@@ -67,11 +67,18 @@ func (s *SessionService) Get(ctx context.Context, applicationID string, Identity
 func (s *SessionService) List(
 	ctx context.Context,
 	applicationID string,
-	userID string,
+	IdentityID int64,
 	limit int64,
 	offset int64,
 ) ([]*model.Session, error) {
-	sessions, err := s.repository.ListWithPagination(ctx, applicationID, userID, limit, offset)
+	userID := fmt.Sprintf("todo-%d", IdentityID)
+	application, err := s.ApplicationService.Get(ctx, applicationID)
+	if err != nil {
+		log.Printf("Application %s not found\n", applicationID)
+		return nil, err
+	}
+
+	sessions, err := s.repository.ListWithPagination(ctx, application.ID, userID, limit, offset)
 	if err != nil {
 		return nil, err
 	}
