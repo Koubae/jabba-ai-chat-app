@@ -84,8 +84,6 @@ func shutdown(client *mongodb.Client) {
 	shutDownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	if err := client.Shutdown(shutDownCtx); err != nil {
-		log.Fatalf("MongoDB error while shutting Down, error %v\n", err)
-	}
+	client.Shutdown(shutDownCtx)
 	log.Println("MongoDB shutdown completed")
 }

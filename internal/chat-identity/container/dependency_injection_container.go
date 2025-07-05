@@ -1,4 +1,4 @@
-package di_container
+package container
 
 import (
 	"github.com/Koubae/jabba-ai-chat-app/internal/chat-identity/application/service"
@@ -6,12 +6,6 @@ import (
 	"github.com/Koubae/jabba-ai-chat-app/pkg/database/mysql"
 	"log"
 )
-
-type DependencyInjectionContainer struct {
-	DB *mysql.Client
-	*repository.UserRepository
-	*service.UserService
-}
 
 var Container *DependencyInjectionContainer
 
@@ -33,4 +27,26 @@ func CreateDIContainer() {
 		UserRepository: userRepository,
 		UserService:    userService,
 	}
+}
+
+func ShutDown() {
+	if Container == nil {
+		log.Println("DependencyInjectionContainer is not initialized, skipping shutdown")
+		return
+	}
+	Container.Shutdown()
+}
+
+type DependencyInjectionContainer struct {
+	DB *mysql.Client
+	*repository.UserRepository
+	*service.UserService
+}
+
+func (c *DependencyInjectionContainer) Shutdown() {
+	log.Println("Shutting down DependencyInjectionContainer and all its resources")
+
+	c.DB.Shutdown()
+	log.Println("MySQL database disconnected")
+
 }

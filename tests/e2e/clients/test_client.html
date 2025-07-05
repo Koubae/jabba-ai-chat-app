@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>WebSocket Chat</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            margin: 2rem;
+        }
+
+        #messages {
+            border: 1px solid #ccc;
+            height: 300px;
+            overflow-y: scroll;
+            padding: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        #input {
+            width: 80%;
+        }
+
+        .disconnect-btn {
+            margin: 1rem;
+            padding: 1rem 2rem;
+            border-radius: 5px;
+            background-color: #fa8b8b;
+        }
+
+        .connect-btn {
+            margin: 1rem;
+            padding: 1rem 2rem;
+            border-radius: 5px;
+            background-color: #8bf28b;
+        }
+
+        .connection-status {
+            margin: 1rem;
+            padding: 1rem 2rem;
+        }
+
+        .connection-status.connected {
+            background-color: #8bf28b;
+        }
+
+        .connection-status.disconnected {
+            background-color: #fa8b8b;
+        }
+
+        .connection-status .status {
+            font-weight: bold;
+            text-align: center;
+            text-transform: uppercase;
+        }
+    </style>
+</head>
+<body>
+<h2>AI-Bot PlayGround</h2>
+<div class="connection-status disconnected">
+    <div class="status">
+        disconnected
+    </div>
+</div>
+
+<div>
+    <label for="session-id"></label><input type="text" id="session-id" placeholder="Session-id" value="session-001">
+</div>
+
+<div id="messages"></div>
+
+<form onsubmit="event.preventDefault(); sendMessage();">
+    <label for="input"></label><input type="text" id="input" placeholder="Type a message" autofocus>
+    <button type="submit">Send</button>
+</form>
+
+<div style="display: flex; justify-content: start; margin-top: 1rem;">
+    <div>
+        <button onclick="disconnect()" class="disconnect-btn">Disconnect</button>
+    </div>
+
+    <div>
+        <button onclick="connect()" class="connect-btn">Connect</button>
+    </div>
+
+</div>
+
+
+<script>
+    const input = document.getElementById('input');
+    const inputSessionId = document.getElementById('session-id');
+    const messages = document.getElementById('messages');
+    const connectionStatusWrapper = document.querySelector('.connection-status');
+    let sessionID = inputSessionId.value;
+
+    const MEMBER_ID = "bot-member"
+    const CHANNEL = "fake-client"
+
+    // chat-identity
+    const AUTH_ENDPOINT = 'http://localhost:20000/api/v1/auth/login';
+
+    // chat-session
+    const WS_ENDPOINT = `ws://localhost:20002/api/v1/chat/ws/bot/create-connection`;
+    const SESSION_CREATE_ENDPOINT = 'http://localhost:20002/api/v1/session/create';
+
+
+    let accessToken = null;
+    let socket;
+
+    connect();
+
+    function sendMessage() {
+        if (!socket) {
+            alert("Please connect first");
+            return;
+        } else if (!accessToken) {
+            alert("Authenticate first");
+            return;
+        }
+
+        const text = input.value.trim();
+        if (text) {
+            socket.send(text);
+            input.value = '';
+        }
+    }
+
+    function disconnect() {
+        socket.close();
+        socket = null;
+
+        while (messages.firstChild) {
+            messages.removeChild(messages.firstChild);
+        }
+        disconnectShow()
+    }
+
+    async function authenticate() {
+        try {
+            const response = await fetch(AUTH_ENDPOINT, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    username: "user_1",
+                    password: "pass",
+                    application_id: "ai-bot"
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error(`Authentication failed: ${response.status}`);
+            }
+
+            const data = await response.json();
+            accessToken = data.access_token;
+
+            if (!accessToken) {
+                throw new Error('No access token received');
+            }
+
+            console.log('Authentication successful');
+            return accessToken;
+
+        } catch (error) {
+            console.error('Authentication error:', error);
+            alert('Authentication failed: ' + error.message);
+            throw error;
+        }
+    }
+
+
+    async function createSession() {
+        try {
+            const response = await fetch(SESSION_CREATE_ENDPOINT, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${accessToken}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    session_id: sessionID,
+                    name: "e2e-session"
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error(`Session creation failed: ${response.status}`);
+            }
+
+            const data = await response.json();
+            console.log('Session created successfully:', data);
+            return data;
+
+        } catch (error) {
+            console.error('Session creation error:', error);
+            alert('Session creation failed: ' + error.message);
+            throw error;
+        }
+    }
+
+    async function connect() {
+        try {
+            if (socket) {
+                alert(`Client  is already connected`);
+                return
+            }
+
+            // First authenticate
+            await authenticate();
+
+            // Then create session
+            await createSession();
+
+            // Then establish WebSocket connection with JWT token
+            sessionID = inputSessionId.value;
+
+            // Option 1: Add JWT as query parameter
+            const wsUrl = `${WS_ENDPOINT}/${sessionID}?access_token=${accessToken}&member_id=${MEMBER_ID}&channel=${CHANNEL}`;
+            socket = new WebSocket(wsUrl);
+
+            socket.onopen = () => {
+                console.log('WebSocket connected with JWT token');
+                connectedShow();
+            };
+
+            socket.onmessage = (event) => {
+                try {
+                    // Try to parse as JSON first
+                    const messageData = JSON.parse(event.data);
+                    displayMessage(messageData);
+                } catch (e) {
+                    // Fallback to plain text for backward compatibility
+                    console.log('Received plain text message:', event.data);
+                    const msg = document.createElement('div');
+                    msg.className = 'message';
+                    msg.textContent = event.data;
+                    messages.appendChild(msg);
+                    messages.scrollTop = messages.scrollHeight;
+                }
+            };
+
+            socket.onclose = () => {
+                console.log('WebSocket disconnected');
+                disconnectShow();
+            };
+
+            socket.onerror = (error) => {
+                console.error('WebSocket error:', error);
+                alert('WebSocket connection failed');
+                disconnectShow();
+            };
+
+        } catch (error) {
+            console.error('Connection failed:', error);
+            disconnectShow();
+        }
+    }
+
+    function displayMessage(messageData) {
+        const msg = document.createElement('div');
+        msg.className = `message ${messageData.role}`;
+
+        let emoji = '';
+        switch(messageData.role) {
+            case 'user':
+                emoji = '🧑';
+                break;
+            case 'assistant':
+                emoji = '🤖';
+                break;
+            case 'system':
+                emoji = '⚙️';
+                break;
+            default:
+                emoji = '💬';
+        }
+
+        msg.innerHTML = `
+            <strong>${emoji} ${messageData.username || messageData.role}:</strong>
+            ${messageData.message}
+            <small style="color: #666; margin-left: 10px;">
+                ${messageData.timestamp ? new Date(messageData.timestamp * 1000).toLocaleTimeString() : ''}
+            </small>
+        `;
+
+        messages.appendChild(msg);
+        messages.scrollTop = messages.scrollHeight;
+    }
+
+
+    function disconnectShow() {
+        connectionStatusWrapper.classList.remove('connected');
+        connectionStatusWrapper.classList.add('disconnected');
+    }
+
+    function connectedShow() {
+        connectionStatusWrapper.classList.remove('disconnected');
+        connectionStatusWrapper.classList.add('connected');
+    }
+
+</script>
+</body>
+</html>

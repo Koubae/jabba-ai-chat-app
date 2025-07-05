@@ -28,10 +28,10 @@ chat-orchestrator-run-local:
 # 	chat-session
 # //////////////////////
 
-session-run:
+chat-session-run:
 	@air -c .air.chat-session.toml
 
-session-run-local:
+chat-session-run-local:
 	go run cmd/chat-session/main.go
 
 # ============================

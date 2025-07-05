@@ -53,13 +53,13 @@ type Client struct {
 }
 
 func (c *Client) String() string {
-	return fmt.Sprintf("Client{config: %+v}", c.Config)
+	return fmt.Sprintf("Client{config: %v}", c.Config.DBName)
 }
 
 func (c *Client) Shutdown() {
 	err := c.DB.Close()
 	if err != nil {
-		log.Printf("failed to close MySQL: %v\n", err.Error())
+		log.Printf("failed to shutdown MySQL: %v\n", err.Error())
 		return
 	}
 }

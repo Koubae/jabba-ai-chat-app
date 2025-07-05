@@ -6,4 +6,5 @@ type AccessToken struct {
 	Username      string
 	Issuer        string
 	Role          string
+	AccessToken   string
 }

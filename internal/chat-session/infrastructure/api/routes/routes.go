@@ -2,6 +2,7 @@ package routes
 
 import (
 	"fmt"
+	"github.com/Koubae/jabba-ai-chat-app/internal/chat-session/infrastructure/api/controllers"
 	"github.com/Koubae/jabba-ai-chat-app/pkg/common/middlewares"
 	"github.com/Koubae/jabba-ai-chat-app/pkg/common/settings"
 	"github.com/gin-gonic/gin"
@@ -30,6 +31,17 @@ func InitRoutes(router *gin.Engine) {
 		})
 	}
 
-	//v1 := router.Group("/api/v1")
-	_ = authMiddleWare
+	v1 := router.Group("/api/v1")
+
+	sessionController := controllers.SessionController{}
+	sessionV1 := v1.Group("/session", authMiddleWare)
+	{
+		sessionV1.POST("/create", sessionController.CreateSession)
+	}
+
+	chatController := controllers.ChatController{}
+	chatV1 := v1.Group("/chat", authMiddleWare)
+	{
+		chatV1.GET("/ws/bot/create-connection/:session_id", chatController.CreateConnection)
+	}
 }

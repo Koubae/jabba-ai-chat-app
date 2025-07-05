@@ -15,13 +15,15 @@ type JWTSecret interface {
 }
 
 func jwtMiddleware[S JWTSecret](c *gin.Context, method jwt.SigningMethod, secret S) {
-	authHeader := c.GetHeader("Authorization")
-	if authHeader == "" || !strings.HasPrefix(authHeader, "Bearer ") {
+	var tokenString string
+
+	tokenPtr := extractToken(c)
+	if tokenPtr == nil {
 		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "missing or invalid token"})
 		return
 	}
 
-	tokenString := strings.TrimPrefix(authHeader, "Bearer ")
+	tokenString = *tokenPtr
 	token, err := jwt.Parse(tokenString, func(t *jwt.Token) (interface{}, error) {
 		if t.Method != method {
 			return nil, fmt.Errorf("unexpected signing method")
@@ -54,6 +56,7 @@ func jwtMiddleware[S JWTSecret](c *gin.Context, method jwt.SigningMethod, secret
 		Username:      claims["user_name"].(string),
 		Issuer:        claims["iss"].(string),
 		Role:          claims["role"].(string),
+		AccessToken:   tokenString,
 	}
 
 	c.Set("application_id", applicationId)
@@ -64,4 +67,31 @@ func jwtMiddleware[S JWTSecret](c *gin.Context, method jwt.SigningMethod, secret
 	c.Set("access_token", accessToken)
 
 	c.Next()
+}
+
+func extractToken(c *gin.Context) *string {
+	var token *string
+	token, _ = extractTokenFromQueryParams(c)
+	if token != nil {
+		return token
+	}
+	token, _ = extractTokenFromHeader(c)
+	return token
+}
+
+func extractTokenFromQueryParams(c *gin.Context) (*string, error) {
+	token := c.Query("access_token")
+	if token == "" {
+		return nil, fmt.Errorf("JWT token is missing from query params")
+	}
+	return &token, nil
+}
+
+func extractTokenFromHeader(c *gin.Context) (*string, error) {
+	authHeader := c.GetHeader("Authorization")
+	if authHeader == "" || !strings.HasPrefix(authHeader, "Bearer ") {
+		return nil, fmt.Errorf("JWT token is missing from headers")
+	}
+	token := strings.TrimPrefix(authHeader, "Bearer ")
+	return &token, nil
 }

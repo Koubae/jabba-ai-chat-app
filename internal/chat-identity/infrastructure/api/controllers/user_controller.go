@@ -3,7 +3,7 @@ package controllers
 import (
 	"errors"
 	"github.com/Koubae/jabba-ai-chat-app/internal/chat-identity/application/user/handlers"
-	"github.com/Koubae/jabba-ai-chat-app/internal/chat-identity/di_container"
+	"github.com/Koubae/jabba-ai-chat-app/internal/chat-identity/container"
 	domainrepository "github.com/Koubae/jabba-ai-chat-app/internal/chat-identity/domain/user/repository"
 	"github.com/Koubae/jabba-ai-chat-app/pkg/auth"
 	"github.com/gin-gonic/gin"
@@ -25,8 +25,7 @@ func (controller *AccountControllers) Get(c *gin.Context) {
 		Username:      token.Username,
 	}
 
-	container := di_container.Container
-	handler := handlers.GetAccountHandler{Command: request, UserService: container.UserService}
+	handler := handlers.GetAccountHandler{Command: request, UserService: container.Container.UserService}
 
 	err := handler.Handle()
 	if errors.Is(err, domainrepository.ErrUserNotFound) {
