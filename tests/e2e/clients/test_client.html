@@ -91,13 +91,8 @@
     const inputSessionId = document.getElementById('session-id');
     const messages = document.getElementById('messages');
     const connectionStatusWrapper = document.querySelector('.connection-status');
-    const connectionStatus = document.querySelector('.connection-status .status');
-
     let sessionID = inputSessionId.value;
-    // const WS_ENDPOINT = `ws://localhost:20003/ai/ws/bot/create-connection`;
-    const WS_ENDPOINT = `ws://localhost:20002/api/v1/session/ws/bot/create-connection`;
-
-
+    const WS_ENDPOINT = `ws://localhost:20002/api/v1/chat/ws/bot/create-connection`;
     const AUTH_ENDPOINT = 'http://localhost:20000/api/v1/auth/login';
 
     let accessToken = null;
