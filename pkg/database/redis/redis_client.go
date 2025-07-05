@@ -38,6 +38,13 @@ func NewClient() (*Client, error) {
 
 }
 
+func GetClient() *Client {
+	if client == nil {
+		panic("Redis Client is not initialized!")
+	}
+	return client
+}
+
 type Client struct {
 	Config *DatabaseConfig
 	DB     *redis.Client
@@ -62,4 +69,34 @@ func (c *Client) Ping(ctx context.Context) {
 	if err != nil {
 		log.Fatalf("failed to ping Redis: %v\n", err.Error())
 	}
+}
+
+// AllKeys
+// /!\/!\/!\/!\/!\ Use this ONLY for debugging!
+func (c *Client) AllKeys(ctx context.Context) ([]string, error) {
+	keys, err := c.DB.Keys(ctx, "*").Result()
+	if err != nil {
+		return nil, err
+	}
+	return keys, nil
+
+}
+
+// LogAllValues
+// /!\/!\/!\/!\/!\ Use this ONLY for debugging!
+func (c *Client) LogAllValues(ctx context.Context) error {
+	keys, err := c.AllKeys(ctx)
+	if err != nil {
+		return err
+	}
+
+	for _, key := range keys {
+		value, err := c.DB.Get(ctx, key).Result()
+		if err != nil {
+			fmt.Printf("Error getting key %s: %v\n", key, err)
+			return err
+		}
+		fmt.Printf("-Key: %s\n-Value:\n%s\n------\n", key, value)
+	}
+	return nil
 }

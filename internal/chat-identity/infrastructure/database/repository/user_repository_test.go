@@ -25,8 +25,6 @@ func TestMain(m *testing.M) {
 	}
 	defer client.Shutdown()
 
-	log.Println(client)
-
 	// /////////////////////////
 	//			Tests
 	// /////////////////////////

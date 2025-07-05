@@ -23,15 +23,18 @@ func TestMain(m *testing.M) {
 	// /////////////////////////
 	settings.NewConfig()
 
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
 	client, err := mongodb.NewClient()
 	if err != nil {
 		panic(err.Error())
 	}
-	log.Println(client)
+	defer client.Shutdown(ctx)
 
 	// Load All collections
 	collectionApplications := client.Collection(collections.CollectionApplications)
-	if err = client.CreateUniqueIndex(collectionApplications, context.TODO(), "name"); err != nil {
+	if err = client.CreateUniqueIndex(collectionApplications, ctx, "name"); err != nil {
 		log.Fatalf("MongoDB error while creating unique index, error %v\n", err)
 	}
 	// /////////////////////////
@@ -44,15 +47,11 @@ func TestMain(m *testing.M) {
 	//			CleanUp
 	// /////////////////////////
 	// Cleanup after all tests
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
 
 	// Drop All collections
 	_ = collectionApplications.Drop(ctx)
 
 	client.Shutdown(ctx)
-	log.Println("MongoDB shutdown completed")
-
 	os.Exit(code)
 }
 

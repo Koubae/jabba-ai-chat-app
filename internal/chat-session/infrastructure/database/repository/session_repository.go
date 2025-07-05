@@ -10,6 +10,7 @@ import (
 	"github.com/Koubae/jabba-ai-chat-app/pkg/common/utils"
 	"github.com/Koubae/jabba-ai-chat-app/pkg/database/redis"
 	redisadapter "github.com/redis/go-redis/v9"
+
 	"time"
 )
 
@@ -48,17 +49,17 @@ func (r *SessionRepository) Get(applicationID string, sessionID string) (*model.
 	key := r.getCacheKey(applicationID, sessionID)
 
 	document, err := r.db.DB.Get(r.ctx, key).Bytes()
-	if errors.Is(err, redisadapter.Nil) {
+	if errors.Is(err, redisadapter.Nil) || document == nil {
 		return nil, repository.ErrSessionNotFound
 	} else if err != nil {
 		return nil, err
 	}
 
-	var session *model.Session
-	if err := json.Unmarshal(document, session); err != nil {
+	var session model.Session
+	if err := json.Unmarshal(document, &session); err != nil {
 		return nil, repository.ErrSessionParse
 	}
-	return session, nil
+	return &session, nil
 }
 
 func (r *SessionRepository) getCacheKey(applicationID string, sessionID string) string {
