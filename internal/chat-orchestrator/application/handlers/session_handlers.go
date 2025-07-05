@@ -12,6 +12,7 @@ import (
 type CreateSessionRequest struct {
 	ApplicationID string `json:"application_id"`
 	IdentityID    int64  `json:"identity_id"`
+	Username      string `json:"username"`
 	Name          string `json:"name"`
 }
 
@@ -22,7 +23,7 @@ type CreateSessionHandler struct {
 }
 
 func (h *CreateSessionHandler) Handle(ctx context.Context) error {
-	session, err := h.SessionService.Create(ctx, h.Command.ApplicationID, h.Command.IdentityID, h.Command.Name)
+	session, err := h.SessionService.Create(ctx, h.Command.ApplicationID, h.Command.IdentityID, h.Command.Username, h.Command.Name)
 	if err != nil {
 		return err
 	}

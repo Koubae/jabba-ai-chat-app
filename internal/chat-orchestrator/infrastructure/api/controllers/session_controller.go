@@ -23,6 +23,7 @@ func (controller *SessionController) Create(c *gin.Context) {
 	request := handlers.CreateSessionRequest{
 		ApplicationID: accessTokenObj.ApplicationId,
 		IdentityID:    accessTokenObj.UserId,
+		Username:      accessTokenObj.Username,
 		Name:          name,
 	}
 	handler := handlers.CreateSessionHandler{Command: request, SessionService: container.Container.SessionService}

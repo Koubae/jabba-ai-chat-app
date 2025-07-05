@@ -11,6 +11,15 @@ type Application struct {
 	Updated time.Time `json:"updated" db:"updated"`
 }
 
+type User struct {
+	ID            string    `bson:"_id,omitempty" json:"id"`
+	ApplicationID string    `bson:"application_id,omitempty" json:"application_id"`
+	IdentityID    int64     `bson:"identity_id"`
+	Username      string    `json:"username"`
+	Created       time.Time `json:"created"`
+	Updated       time.Time `json:"updated"`
+}
+
 type Session struct {
 	ID            string    `bson:"_id,omitempty" json:"id"`
 	ApplicationID string    `bson:"application_id,omitempty" json:"application_id"`

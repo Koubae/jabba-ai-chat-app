@@ -48,6 +48,7 @@ func main() {
 	// Users
 	collectionUsers := client.Collection(collections.CollectionUsers)
 	err = client.CreateCompoundUniqueIndex(collectionUsers, ctx, []string{"application_id", "username"})
+	err = client.CreateCompoundUniqueIndex(collectionUsers, ctx, []string{"application_id", "identity_id"})
 	if err != nil {
 		log.Printf("MongoDB error while creating compound unique index of users, error %v\n", err)
 	}

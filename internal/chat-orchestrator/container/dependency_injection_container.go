@@ -21,17 +21,21 @@ func CreateDIContainer() {
 	}
 
 	applicationRepository := repository.NewApplicationRepository(db)
+	userRepository := repository.NewUserRepository(db)
 	sessionRepository := repository.NewSessionRepository(db)
 
 	applicationService := service.NewApplicationService(applicationRepository)
-	sessionService := service.NewSessionService(sessionRepository, applicationService)
+	userService := service.NewUserService(userRepository, applicationService)
+	sessionService := service.NewSessionService(sessionRepository, applicationService, userService)
 
 	Container = &DependencyInjectionContainer{
 		DB:                    db,
 		ApplicationRepository: applicationRepository,
+		UserRepository:        userRepository,
 		SessionRepository:     sessionRepository,
 
 		ApplicationService: applicationService,
+		UserService:        userService,
 		SessionService:     sessionService,
 	}
 }
@@ -48,8 +52,10 @@ type DependencyInjectionContainer struct {
 	DB *mongodb.Client
 	*repository.ApplicationRepository
 	*repository.SessionRepository
+	*repository.UserRepository
 
 	*service.ApplicationService
+	*service.UserService
 	*service.SessionService
 }
 
