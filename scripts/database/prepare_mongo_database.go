@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"github.com/Koubae/jabba-ai-chat-app/internal/chat-orchestrator/domain/chat/model"
+	"github.com/Koubae/jabba-ai-chat-app/internal/chat-orchestrator/infrastructure/database/collections"
 	"github.com/Koubae/jabba-ai-chat-app/pkg/common/settings"
 	"github.com/Koubae/jabba-ai-chat-app/pkg/database/mongodb"
 	"github.com/joho/godotenv"
@@ -39,28 +39,28 @@ func main() {
 	log.Printf("MongoDB databases: %v\n", databases)
 
 	// Applications
-	collectionApplications := client.Collection(model.CollectionApplications)
+	collectionApplications := client.Collection(collections.CollectionApplications)
 	err = client.CreateUniqueIndex(collectionApplications, ctx, "name")
 	if err != nil {
 		log.Printf("MongoDB error while creating index for Applications collection, error %v\n", err)
 	}
 
 	// Users
-	collectionUsers := client.Collection(model.CollectionUsers)
+	collectionUsers := client.Collection(collections.CollectionUsers)
 	err = client.CreateCompoundUniqueIndex(collectionUsers, ctx, []string{"application_id", "username"})
 	if err != nil {
 		log.Printf("MongoDB error while creating compound unique index of users, error %v\n", err)
 	}
 
 	// Sessions
-	collectionSessions := client.Collection(model.CollectionSessions)
+	collectionSessions := client.Collection(collections.CollectionSessions)
 	err = client.CreateIndex(collectionSessions, ctx, []string{"application_id"}, []int{1})
 	if err != nil {
 		log.Printf("MongoDB error while creating Index in sessions collections, error %v\n", err)
 	}
 
 	// Members
-	collectionMembers := client.Collection(model.CollectionMembers)
+	collectionMembers := client.Collection(collections.CollectionMembers)
 	err = client.CreateIndex(collectionMembers, ctx, []string{"session_id"}, []int{1})
 	if err != nil {
 		log.Printf("MongoDB error while creating Index in members collections with session_id, error %v\n", err)
@@ -71,7 +71,7 @@ func main() {
 	}
 
 	// Messages
-	collectionMessages := client.Collection(model.CollectionMessages)
+	collectionMessages := client.Collection(collections.CollectionMessages)
 	err = client.CreateIndex(collectionMessages, ctx, []string{"session_id", "user_id"}, []int{1, 1})
 	if err != nil {
 		log.Printf("MongoDB error while creating Index in messages collections with session_id, user_id, error %v\n", err)

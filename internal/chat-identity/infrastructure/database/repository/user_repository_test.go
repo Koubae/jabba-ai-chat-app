@@ -50,7 +50,7 @@ func TestMain(m *testing.M) {
 
 const HashedPassword = "$2a$10$GPeYnQMl9mGX1hvIrqTIjeJmPOESnUHFe39Ksm0HifPU8r9YchbbC"
 
-func TestNewUserRepository(t *testing.T) {
+func TestUserRepository(t *testing.T) {
 	client := mysql.GetClient()
 	repository := NewUserRepository(client)
 

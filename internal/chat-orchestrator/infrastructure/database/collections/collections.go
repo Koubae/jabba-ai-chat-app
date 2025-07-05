@@ -5,6 +5,12 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
+const CollectionApplications = "applications"
+const CollectionUsers = "users"
+const CollectionSessions = "sessions"
+const CollectionMembers = "members"
+const CollectionMessages = "messages"
+
 type Application struct {
 	mongodb.EntityID   `bson:",inline"`
 	mongodb.Timestamps `bson:",inline"`

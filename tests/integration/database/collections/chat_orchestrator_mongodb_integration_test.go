@@ -2,7 +2,6 @@ package collections
 
 import (
 	"context"
-	"github.com/Koubae/jabba-ai-chat-app/internal/chat-orchestrator/domain/chat/model"
 	"github.com/Koubae/jabba-ai-chat-app/internal/chat-orchestrator/infrastructure/database/collections"
 	"github.com/Koubae/jabba-ai-chat-app/pkg/common/settings"
 	_ "github.com/Koubae/jabba-ai-chat-app/pkg/common/testings"
@@ -32,11 +31,11 @@ func TestMain(m *testing.M) {
 	log.Println(client)
 
 	// Load All collections
-	collectionApplications := client.Collection(model.CollectionApplications)
-	collectionUsers := client.Collection(model.CollectionUsers)
-	collectionSessions := client.Collection(model.CollectionSessions)
-	collectionMembers := client.Collection(model.CollectionMembers)
-	collectionMessages := client.Collection(model.CollectionMessages)
+	collectionApplications := client.Collection(collections.CollectionApplications)
+	collectionUsers := client.Collection(collections.CollectionUsers)
+	collectionSessions := client.Collection(collections.CollectionSessions)
+	collectionMembers := client.Collection(collections.CollectionMembers)
+	collectionMessages := client.Collection(collections.CollectionMessages)
 
 	// /////////////////////////
 	//			Tests
@@ -71,7 +70,7 @@ func TestIntegrationMongoDBApplicationCollection(t *testing.T) {
 	defer cancel()
 
 	db := mongodb.GetClient()
-	collection := db.Collection(model.CollectionApplications)
+	collection := db.Collection(collections.CollectionApplications)
 
 	err := db.CreateUniqueIndex(collection, ctx, "name")
 	assert.NoError(t, err)
