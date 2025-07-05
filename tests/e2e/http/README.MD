@@ -56,6 +56,6 @@ curl localhost:20000/api/v1/user -H "Authorization: Bearer $access_token"; echo
 access_token=$(curl -s --request POST  localhost:20000/api/v1/auth/login -H "Content-Type: application/json" -d '{"username": "user_1","password": "pass","application_id": "ai-bot"}' | jq -r '.access_token');
 # Create session
 
-curl -X POST localhost:20002/api/v1/session/create -H "Authorization: Bearer $access_token" -d '{"application_id": "e2e-application-001", "session_id": "session_123", "name": "session-test"}'
+curl -X POST localhost:20002/api/v1/session/create -H "Authorization: Bearer $access_token" -d '{"session_id": "session_123", "name": "session-test"}';echo;
 
 ```

@@ -2,6 +2,7 @@ package container
 
 import (
 	"github.com/Koubae/jabba-ai-chat-app/internal/chat-session/application/service"
+	"github.com/Koubae/jabba-ai-chat-app/internal/chat-session/infrastructure/bot"
 	"github.com/Koubae/jabba-ai-chat-app/internal/chat-session/infrastructure/database/repository"
 	"github.com/Koubae/jabba-ai-chat-app/pkg/database/redis"
 	"log"
@@ -19,13 +20,15 @@ func CreateDIContainer() {
 		log.Fatal(err)
 	}
 
+	aiBotConnector := bot.NewAIBotConnector()
 	sessionRepository := repository.NewSessionRepository(db)
-	sessionService := service.NewSessionService(sessionRepository)
+	sessionService := service.NewSessionService(sessionRepository, aiBotConnector)
 
 	Container = &DependencyInjectionContainer{
 		DB:                db,
 		SessionRepository: sessionRepository,
 		SessionService:    sessionService,
+		AIBotConnector:    aiBotConnector,
 	}
 }
 
@@ -41,6 +44,7 @@ type DependencyInjectionContainer struct {
 	DB *redis.Client
 	*repository.SessionRepository
 	*service.SessionService
+	*bot.AIBotConnector
 }
 
 func (c *DependencyInjectionContainer) Shutdown() {

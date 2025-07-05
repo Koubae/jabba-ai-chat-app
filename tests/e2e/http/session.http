@@ -22,7 +22,6 @@ Authorization: Bearer {{access_token}}
 Content-Type: application/json
 
 {
-  "application_id": "e2e-application-001",
   "session_id": "session_{{$timestamp}}_{{$randomInt}}",
   "name": "e2e-session-{{$randomInt}}"
 }
