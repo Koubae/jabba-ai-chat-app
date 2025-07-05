@@ -50,5 +50,5 @@ Content-Type: application/json
 
 ### Request: Get User
 # curl localhost:20000/api/v1/user -H "Authorization: Bearer $access_token"
-GET localhost:20000/api/v1/user
+GET localhost:20000/api/v1/user/
 Authorization: Bearer {{access_token}}

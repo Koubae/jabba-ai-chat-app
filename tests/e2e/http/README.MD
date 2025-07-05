@@ -24,7 +24,8 @@ curl -s --request POST localhost:20000/api/v1/auth/signup -H "Content-Type: appl
 ```bash
 access_token=$(curl -s --request POST  localhost:20000/api/v1/auth/login -H "Content-Type: application/json" -d '{"username": "user_1","password": "pass","application_id": "ai-bot"}' | jq -r '.access_token'); \
   echo $access_token; \
-  curl localhost:20000/api/v1/account/1?full_profile=false -H "Authorization: Bearer $access_token"
+  curl localhost:20000/api/v1/user/ -H "Authorization: Bearer $access_token"; echo
+
 ```
 
 #### SignUp + Login
@@ -34,7 +35,8 @@ user_id=$(curl -s --request POST localhost:20000/api/v1/auth/signup -H "Content-
   echo $user_id; echo -e "\n"; \
   access_token=$(curl -s --request POST  localhost:20000/api/v1/auth/login -H "Content-Type: application/json" -d '{"username": "user_1","password": "pass","application_id": "ai-bot"}' | jq -r '.access_token'); \
   echo $access_token; echo -e "\n"; \
-  curl localhost:20000/api/v1/account/$user_id?full_profile=false -H "Authorization: Bearer $access_token"
+  curl localhost:20000/api/v1/user/ -H "Authorization: Bearer $access_token"
+  
 ```
 
 
@@ -42,5 +44,8 @@ user_id=$(curl -s --request POST localhost:20000/api/v1/auth/signup -H "Content-
 # signup
 curl -s --request POST localhost:20000/api/v1/auth/signup -H "Content-Type: application/json" -d '{"username": "user_1", "password": "pass","application_id": "ai-bot"}';echo;
 # login
-curl -s --request POST  localhost:20000/api/v1/auth/login -H "Content-Type: application/json" -d '{"username": "user_1","password": "pass","application_id": "ai-bot"}'
+curl -s --request POST  localhost:20000/api/v1/auth/login -H "Content-Type: application/json" -d '{"username": "user_1","password": "pass","application_id": "ai-bot"}';echo
+# Get User
+access_token=$(curl -s --request POST  localhost:20000/api/v1/auth/login -H "Content-Type: application/json" -d '{"username": "user_1","password": "pass","application_id": "ai-bot"}' | jq -r '.access_token');
+curl localhost:20000/api/v1/user/ -H "Authorization: Bearer $access_token"; echo
 ```
