@@ -6,6 +6,7 @@ import (
 	"github.com/Koubae/jabba-ai-chat-app/internal/chat-identity/container"
 	"github.com/Koubae/jabba-ai-chat-app/internal/chat-identity/infrastructure/api/routes"
 	"github.com/Koubae/jabba-ai-chat-app/pkg/common/settings"
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 	"log"
@@ -45,6 +46,13 @@ func RunServer() {
 	defer stop()
 
 	router := gin.Default()
+
+	corsConfig := cors.DefaultConfig()
+	corsConfig.AllowAllOrigins = true
+	corsConfig.AllowMethods = []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"}
+	corsConfig.AllowHeaders = []string{"Origin", "Content-Type", "Authorization"}
+	router.Use(cors.New(corsConfig))
+
 	err := router.SetTrustedProxies(config.TrustedProxies)
 	if err != nil {
 		panic(err.Error())
