@@ -92,8 +92,14 @@
     const messages = document.getElementById('messages');
     const connectionStatusWrapper = document.querySelector('.connection-status');
     let sessionID = inputSessionId.value;
-    const WS_ENDPOINT = `ws://localhost:20002/api/v1/chat/ws/bot/create-connection`;
+
+    // chat-identity
     const AUTH_ENDPOINT = 'http://localhost:20000/api/v1/auth/login';
+
+    // chat-session
+    const WS_ENDPOINT = `ws://localhost:20002/api/v1/chat/ws/bot/create-connection`;
+    const SESSION_CREATE_ENDPOINT = 'http://localhost:20002/api/v1/session/create';
+
 
     let accessToken = null;
     let socket;
@@ -165,10 +171,42 @@
     }
 
 
+    async function createSession() {
+        try {
+            const response = await fetch(SESSION_CREATE_ENDPOINT, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${accessToken}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    session_id: sessionID,
+                    name: "e2e-session"
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error(`Session creation failed: ${response.status}`);
+            }
+
+            const data = await response.json();
+            console.log('Session created successfully:', data);
+            return data;
+
+        } catch (error) {
+            console.error('Session creation error:', error);
+            alert('Session creation failed: ' + error.message);
+            throw error;
+        }
+    }
+
     async function connect() {
         try {
             // First authenticate
             await authenticate();
+
+            // Then create session
+            await createSession();
 
             // Then establish WebSocket connection with JWT token
             sessionID = inputSessionId.value;

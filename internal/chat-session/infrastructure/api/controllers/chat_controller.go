@@ -2,9 +2,7 @@ package controllers
 
 import (
 	"context"
-	"fmt"
 	"github.com/Koubae/jabba-ai-chat-app/internal/chat-session/container"
-	"github.com/Koubae/jabba-ai-chat-app/pkg/auth"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 	"log"
@@ -47,27 +45,7 @@ func (controller *ChatController) CreateConnection(c *gin.Context) {
 		}
 	}(conn)
 
-	accessTokenObj, _ := ctx.Value("access_token").(*auth.AccessToken)
-
-	identity := fmt.Sprintf("[%s][%s][%s (%d)] (WebSocket)",
-		accessTokenObj.ApplicationId, sessionID, accessTokenObj.Username, accessTokenObj.UserId)
-	fmt.Printf("Created WebSocket connection %s\n", identity)
-
-	broadcaster := container.Container.Broadcaster
-	broadcaster.Connect(accessTokenObj.ApplicationId, sessionID, accessTokenObj.UserId, accessTokenObj.Username, conn)
-
-	for {
-		messageType, message, err := conn.ReadMessage()
-		if err != nil {
-			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure, websocket.CloseNoStatusReceived) {
-				log.Printf("%s Error reading message | Terminating connection, error: %s\n", identity, err)
-			} else {
-				log.Printf("%s client closed connection | Terminagin connection\n", identity)
-			}
-			break
-		}
-
-		log.Printf("%s received: %s", identity, message)
-		broadcaster.Broadcast(accessTokenObj.ApplicationId, sessionID, messageType, message)
-	}
+	chatService := container.Container.ChatService
+	response, err := chatService.CreateConnectionAndStartChat(ctx, conn, sessionID)
+	log.Printf("Chat connection closed, response: %v, error: %v\n", *response, err)
 }
