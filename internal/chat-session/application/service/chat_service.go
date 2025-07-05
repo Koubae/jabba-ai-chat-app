@@ -67,7 +67,12 @@ func (s *ChatService) CreateConnectionAndStartChat(
 	defer s.Broadcaster.Disconnect(conn, accessToken.ApplicationId, sessionID)
 
 	s.sendMessageHistoryToClient(ctx, conn, accessToken, sessionID, identity)
+	s.chat(conn, identity, accessToken, sessionID, memberID, channel, session)
 
+	return &response, err
+}
+
+func (s *ChatService) chat(conn *websocket.Conn, identity string, accessToken *auth.AccessToken, sessionID string, memberID string, channel string, session *model.Session) {
 	for {
 		messageType, message, err := conn.ReadMessage()
 		if err != nil {
@@ -123,8 +128,6 @@ func (s *ChatService) CreateConnectionAndStartChat(
 
 		s.Broadcaster.Broadcast(accessToken.ApplicationId, sessionID, messageType, payloadBytes)
 	}
-
-	return &response, err
 }
 
 func createMessagePayload(applicationID string, sessionID string, role string, userID int, username string, memberID string, channel string, message string) model.Message {
