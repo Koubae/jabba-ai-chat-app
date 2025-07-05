@@ -40,7 +40,7 @@ func main() {
 
 	// Applications
 	collectionApplications := client.Collection(model.CollectionApplications)
-	err = client.CreateUniqueIndex(collectionApplications, ctx, "application_id")
+	err = client.CreateUniqueIndex(collectionApplications, ctx, "name")
 	if err != nil {
 		log.Printf("MongoDB error while creating index for Applications collection, error %v\n", err)
 	}
