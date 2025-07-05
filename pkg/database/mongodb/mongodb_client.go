@@ -60,7 +60,7 @@ type Client struct {
 }
 
 func (c *Client) String() string {
-	return fmt.Sprintf("Client{config: %+v}", c.config)
+	return fmt.Sprintf("Client{config: %v}", c.config.DBName)
 }
 
 func (c *Client) Shutdown(ctx context.Context) error {
