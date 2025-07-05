@@ -91,7 +91,7 @@ func (r *ApplicationRepository) GetByName(ctx context.Context, name string) (*mo
 
 }
 
-func (r *ApplicationRepository) ListWithPagination(ctx context.Context, limit, offset int64) ([]*model.Application, error) {
+func (r *ApplicationRepository) ListWithPagination(ctx context.Context, limit int64, offset int64) ([]*model.Application, error) {
 	findOptions := options.Find()
 	findOptions.SetSkip(offset)
 	findOptions.SetLimit(limit)

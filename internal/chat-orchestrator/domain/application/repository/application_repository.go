@@ -10,6 +10,7 @@ type ApplicationRepository interface {
 	Create(ctx context.Context, application *model.Application) error
 	GetByID(ctx context.Context, id string) (*model.Application, error)
 	GetByName(ctx context.Context, name string) (*model.Application, error)
+	ListWithPagination(ctx context.Context, limit int64, offset int64) ([]*model.Application, error)
 }
 
 var (

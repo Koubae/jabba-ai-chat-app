@@ -61,3 +61,24 @@ func (controller *ApplicationController) Get(c *gin.Context) {
 	c.JSON(http.StatusOK, handler.Response)
 
 }
+func (controller *ApplicationController) List(c *gin.Context) {
+	var request = handlers.ListApplicationRequest{}
+	if err := request.Validate(c); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	handler := handlers.ListApplicationHandler{Command: request, ApplicationService: container.Container.ApplicationService}
+
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
+	defer cancel()
+
+	err := handler.Handle(ctx)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, handler.Response)
+
+}

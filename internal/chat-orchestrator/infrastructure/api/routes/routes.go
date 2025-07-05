@@ -38,6 +38,7 @@ func InitRoutes(router *gin.Engine) {
 	{
 		applicationV1.POST("/:name", applicationController.Create)
 		applicationV1.GET("/:name", applicationController.Get)
+		applicationV1.GET("/list", applicationController.List)
 	}
 
 }

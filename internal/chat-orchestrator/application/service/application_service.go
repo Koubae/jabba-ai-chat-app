@@ -38,3 +38,15 @@ func (s *ApplicationService) Get(ctx context.Context, name string) (*model.Appli
 
 	return application, nil
 }
+
+func (s *ApplicationService) List(ctx context.Context, limit int64, offset int64) ([]*model.Application, error) {
+	applications, err := s.repository.ListWithPagination(ctx, limit, offset)
+	if err != nil {
+		return nil, err
+	}
+	if applications == nil {
+		applications = []*model.Application{}
+	}
+
+	return applications, nil
+}
