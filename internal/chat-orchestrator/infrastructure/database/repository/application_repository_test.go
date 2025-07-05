@@ -60,11 +60,11 @@ func TestApplicationRepository(t *testing.T) {
 	defer cancel()
 
 	db := mongodb.GetClient()
-	repository := NewApplicationRepository(db, ctx)
+	repository := NewApplicationRepository(db)
 
 	name := "applicationOne-test" + utils.RandomString(10)
 	applicationOne := &model.Application{Name: name}
-	err := repository.Create(applicationOne)
+	err := repository.Create(ctx, applicationOne)
 	assert.NoError(t, err)
 
 	applicationID := applicationOne.ID
@@ -73,7 +73,7 @@ func TestApplicationRepository(t *testing.T) {
 		name := "application-test" + utils.RandomString(10)
 		application := &model.Application{Name: name}
 
-		err := repository.Create(application)
+		err := repository.Create(ctx, application)
 		assert.NoError(t, err)
 		assert.NotEmpty(t, application.ID)
 		assert.NotEmpty(t, application.Updated)
@@ -83,37 +83,37 @@ func TestApplicationRepository(t *testing.T) {
 		name := "application-test" + utils.RandomString(10)
 		application := &model.Application{Name: name}
 
-		err := repository.Create(application)
+		err := repository.Create(ctx, application)
 		assert.NoError(t, err)
 		assert.NotEmpty(t, application.ID)
 
 		application2 := &model.Application{Name: name}
-		err2 := repository.Create(application2)
+		err2 := repository.Create(ctx, application2)
 		assert.ErrorIs(t, err2, domainrepository.ErrApplicationOnCreate)
 
 	})
 
 	t.Run("GetByID", func(t *testing.T) {
-		application, err := repository.GetByID(applicationID)
+		application, err := repository.GetByID(ctx, applicationID)
 		assert.NoError(t, err)
 		assert.Equal(t, applicationOne.ID, application.ID)
 		assert.Equal(t, applicationOne.Name, application.Name)
 
 		t.Run("GetByIDNotFound", func(t *testing.T) {
 			objectID := primitive.NewObjectID().Hex()
-			application, err := repository.GetByID(objectID)
+			application, err := repository.GetByID(ctx, objectID)
 			assert.ErrorIs(t, err, domainrepository.ErrApplicationNotFound)
 			assert.Nil(t, application)
 		})
 
 		t.Run("GetByName", func(t *testing.T) {
-			application, err := repository.GetByName(applicationOne.Name)
+			application, err := repository.GetByName(ctx, applicationOne.Name)
 			assert.NoError(t, err)
 			assert.Equal(t, applicationOne.ID, application.ID)
 			assert.Equal(t, applicationOne.Name, application.Name)
 		})
 		t.Run("GetByNameNotFound", func(t *testing.T) {
-			application, err := repository.GetByName("potato")
+			application, err := repository.GetByName(ctx, "potato")
 			assert.ErrorIs(t, err, domainrepository.ErrApplicationNotFound)
 			assert.Nil(t, application)
 		})

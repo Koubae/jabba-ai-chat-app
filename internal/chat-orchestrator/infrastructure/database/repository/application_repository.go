@@ -14,22 +14,21 @@ import (
 
 type ApplicationRepository struct {
 	db         *mongodb.Client
-	ctx        context.Context
 	collection *mongo.Collection
 }
 
-func NewApplicationRepository(db *mongodb.Client, ctx context.Context) *ApplicationRepository {
+func NewApplicationRepository(db *mongodb.Client) *ApplicationRepository {
 	collection := db.Collection(collections.CollectionApplications)
-	return &ApplicationRepository{db: db, ctx: ctx, collection: collection}
+	return &ApplicationRepository{db: db, collection: collection}
 }
 
-func (r *ApplicationRepository) Create(application *model.Application) error {
+func (r *ApplicationRepository) Create(ctx context.Context, application *model.Application) error {
 	document := collections.Application{
 		Name: application.Name,
 	}
 	document.OnCreate()
 
-	result, err := r.collection.InsertOne(r.ctx, application)
+	result, err := r.collection.InsertOne(ctx, application)
 	if err != nil {
 		log.Printf("Error while creating application %+v, error: %s\n", document, err)
 		return domainrepository.ErrApplicationOnCreate
@@ -44,7 +43,7 @@ func (r *ApplicationRepository) Create(application *model.Application) error {
 
 }
 
-func (r *ApplicationRepository) GetByID(id string) (*model.Application, error) {
+func (r *ApplicationRepository) GetByID(ctx context.Context, id string) (*model.Application, error) {
 	document := &collections.Application{}
 
 	documentID, err := primitive.ObjectIDFromHex(id)
@@ -53,7 +52,7 @@ func (r *ApplicationRepository) GetByID(id string) (*model.Application, error) {
 		return nil, err
 	}
 
-	err = r.collection.FindOne(r.ctx, bson.M{"_id": documentID}).Decode(document)
+	err = r.collection.FindOne(ctx, bson.M{"_id": documentID}).Decode(document)
 	if err != nil {
 		log.Printf("Error in GetByID with id %v, error: %s\n", id, err)
 		return nil, domainrepository.ErrApplicationNotFound
@@ -69,9 +68,9 @@ func (r *ApplicationRepository) GetByID(id string) (*model.Application, error) {
 
 }
 
-func (r *ApplicationRepository) GetByName(name string) (*model.Application, error) {
+func (r *ApplicationRepository) GetByName(ctx context.Context, name string) (*model.Application, error) {
 	document := &collections.Application{}
-	err := r.collection.FindOne(r.ctx, bson.M{"name": name}).Decode(document)
+	err := r.collection.FindOne(ctx, bson.M{"name": name}).Decode(document)
 	if err != nil {
 		log.Printf("Error in GetByID with name %v, error: %s\n", name, err)
 		return nil, domainrepository.ErrApplicationNotFound
