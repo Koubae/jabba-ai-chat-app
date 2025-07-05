@@ -24,3 +24,22 @@ func (h *CreateApplicationHandler) Handle(ctx context.Context) error {
 	h.Response = application
 	return nil
 }
+
+type GetApplicationRequest struct {
+	Name string `json:"name"`
+}
+
+type GetApplicationHandler struct {
+	Command  GetApplicationRequest
+	Response *model.Application
+	*service.ApplicationService
+}
+
+func (h *GetApplicationHandler) Handle(ctx context.Context) error {
+	application, err := h.ApplicationService.Get(ctx, h.Command.Name)
+	if err != nil {
+		return err
+	}
+	h.Response = application
+	return nil
+}

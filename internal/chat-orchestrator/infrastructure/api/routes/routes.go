@@ -37,6 +37,7 @@ func InitRoutes(router *gin.Engine) {
 	applicationV1 := v1.Group("/application", authMiddleWare)
 	{
 		applicationV1.POST("/:name", applicationController.Create)
+		applicationV1.GET("/:name", applicationController.Get)
 	}
 
 }
