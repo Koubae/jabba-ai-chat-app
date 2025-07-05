@@ -23,7 +23,7 @@ type SessionService struct {
 	ApplicationService *ApplicationService
 }
 
-func (s *SessionService) Create(ctx context.Context, applicationID string, IdentityID int, name string) (*model.Session, error) {
+func (s *SessionService) Create(ctx context.Context, applicationID string, IdentityID int64, name string) (*model.Session, error) {
 
 	UserID := fmt.Sprintf("todo-%d", IdentityID)
 

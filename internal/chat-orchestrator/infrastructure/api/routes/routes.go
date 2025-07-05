@@ -41,4 +41,10 @@ func InitRoutes(router *gin.Engine) {
 		applicationV1.GET("/list", applicationController.List)
 	}
 
+	sessionController := controllers.SessionController{}
+	sessionV1 := v1.Group("/session", authMiddleWare)
+	{
+		sessionV1.POST("/:name", sessionController.Create)
+	}
+
 }
