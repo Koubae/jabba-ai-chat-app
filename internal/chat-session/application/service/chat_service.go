@@ -67,79 +67,103 @@ func (s *ChatService) CreateConnectionAndStartChat(
 	defer s.Broadcaster.Disconnect(conn, accessToken.ApplicationId, sessionID)
 
 	s.sendMessageHistoryToClient(ctx, conn, accessToken, sessionID, identity)
-	s.chat(conn, identity, accessToken, sessionID, memberID, channel, session)
 
+	handler := &ChatHandler{
+		conn:        conn,
+		accessToken: accessToken.AccessToken,
+		Session:     session,
+		Member:      &model.Member{MemberID: memberID, Channel: channel},
+		identity:    identity,
+	}
+
+	response, err = handler.Handle(s.Broadcaster, s.AIBotConnector, s.messageRepository)
 	return &response, err
 }
 
-func (s *ChatService) chat(conn *websocket.Conn, identity string, accessToken *auth.AccessToken, sessionID string, memberID string, channel string, session *model.Session) {
+type ChatHandler struct {
+	conn        *websocket.Conn
+	accessToken string
+	*model.Session
+	*model.Member
+	identity string
+}
+
+func (h *ChatHandler) String() string {
+	return h.identity
+}
+
+func (h *ChatHandler) Handle(broadcaster *bot.Broadcaster, botConnector *bot.AIBotConnector, messageRepository repository.MessageRepository) (string, error) {
+	response := "Goodbye"
+	var err error
 	for {
-		messageType, message, err := conn.ReadMessage()
+		messageType, message, err := h.conn.ReadMessage()
 		if err != nil {
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure, websocket.CloseNoStatusReceived) {
-				log.Printf("%s Error reading message | Terminating connection, error: %s\n", identity, err)
+				log.Printf("%s Error reading message | Terminating connection, error: %s\n", h, err)
 				err = errors.New("unexpected error while reading message")
 			} else {
-				log.Printf("%s client closed connection | Terminating connection\n", identity)
+				log.Printf("%s client closed connection | Terminating connection\n", h)
 			}
 			break
 		}
-		log.Printf("%s received: %s", identity, message)
+		log.Printf("%s received: %s", h.identity, message)
 
 		// Send the user a message already this is the User's original message!
 		go func() {
-			payload := createMessagePayload(accessToken.ApplicationId, sessionID, "user",
-				int(accessToken.UserId), accessToken.Username, memberID, channel, string(message))
+			payload := createMessagePayload(h.Session.ApplicationID, h.Session.ID, "user",
+				h.Member.UserID, h.Member.Username, h.Member.MemberID, h.Member.Channel, string(message))
 
 			go func() {
-				err := s.messageRepository.AddMessage(context.Background(), accessToken.ApplicationId, sessionID, &payload)
+				err := messageRepository.AddMessage(context.Background(), h.Session.ApplicationID, h.Session.ID, &payload)
 				if err != nil {
-					log.Printf("%s Error while adding message to database, message: %+v, error: %s\n", identity, message, err)
+					log.Printf("%s Error while adding message to database, message: %+v, error: %s\n", h, message, err)
 				}
 			}()
 
 			payloadBytes, _ := json.Marshal(payload)
-			s.Broadcaster.Broadcast(accessToken.ApplicationId, sessionID, messageType, payloadBytes)
+			broadcaster.Broadcast(h.Session.ApplicationID, h.Session.ID, messageType, payloadBytes)
 		}()
 
-		response, err := s.AIBotConnector.SendMessage(context.Background(), accessToken.AccessToken, session.ID, string(message))
+		response, err := botConnector.SendMessage(context.Background(), h.accessToken, h.Session.ID, string(message))
 		if err != nil {
-			log.Printf("%s Error while calling AI-BOT, error: %s\n", identity, err)
+			log.Printf("%s Error while calling AI-BOT, error: %s\n", h, err)
 
-			payload := createMessagePayload(accessToken.ApplicationId, sessionID, "system",
+			payload := createMessagePayload(h.Session.ApplicationID, h.Session.ID, "system",
 				0, "Error", "system", "server", fmt.Sprintf("Error while calling AI-BOT, error: %s", err))
 			payloadBytes, _ := json.Marshal(payload)
-			s.Broadcaster.Broadcast(accessToken.ApplicationId, sessionID, messageType, payloadBytes)
+			broadcaster.Broadcast(h.Session.ApplicationID, h.Session.ID, messageType, payloadBytes)
 			continue
 		}
 
 		reply := response.Reply
-		log.Printf("%s (Bot-Reply): %s", identity, reply)
-		payload := createMessagePayload(accessToken.ApplicationId, sessionID, "assistant",
+		log.Printf("%s (Bot-Reply): %s", h, reply)
+		payload := createMessagePayload(h.Session.ApplicationID, h.Session.ID, "assistant",
 			0, "AI Assistant", "bot", "server", reply)
 		payloadBytes, _ := json.Marshal(payload)
 
 		go func() {
-			err := s.messageRepository.AddMessage(context.Background(), accessToken.ApplicationId, sessionID, &payload)
+			err := messageRepository.AddMessage(context.Background(), h.Session.ApplicationID, h.Session.ID, &payload)
 			if err != nil {
-				log.Printf("%s Error while adding message to database, message: %+v, error: %s\n", identity, message, err)
+				log.Printf("%s Error while adding message to database, message: %+v, error: %s\n", h, message, err)
 			}
 		}()
 
-		s.Broadcaster.Broadcast(accessToken.ApplicationId, sessionID, messageType, payloadBytes)
+		broadcaster.Broadcast(h.Session.ApplicationID, h.Session.ID, messageType, payloadBytes)
 	}
+
+	return response, err
 }
 
 func createMessagePayload(applicationID string, sessionID string, role string, userID int, username string, memberID string, channel string, message string) model.Message {
 	return model.Message{
 		ApplicationID: applicationID,
 		SessionID:     sessionID,
-		Role:          role,
-		UserID:        userID,
-		Username:      username,
 		Message:       message,
 		Timestamp:     time.Now().Unix(),
 		Member: model.Member{
+			Role:     role,
+			UserID:   userID,
+			Username: username,
 			MemberID: memberID,
 			Channel:  channel,
 		},
