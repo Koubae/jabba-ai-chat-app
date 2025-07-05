@@ -22,6 +22,7 @@ type Connection struct {
 	Username      string
 	MemberID      string
 	Channel       string
+	writeMutex    sync.Mutex
 }
 
 type Broadcaster struct {
@@ -125,13 +126,27 @@ func (cm *Broadcaster) Broadcast(applicationID string, sessionID string, message
 	cm.mutex.RUnlock()
 
 	var failedConnections []*websocket.Conn
+	var failedMutex sync.Mutex
+
+	var wg sync.WaitGroup
 
 	for _, conn := range connections {
-		if err := conn.Conn.WriteMessage(messageType, message); err != nil {
-			// Collect failed connections for removal
-			failedConnections = append(failedConnections, conn.Conn)
-		}
+		wg.Add(1)
+		go func(connection *Connection) {
+			defer wg.Done()
+
+			connection.writeMutex.Lock()
+			defer connection.writeMutex.Unlock()
+
+			if err := connection.Conn.WriteMessage(messageType, message); err != nil {
+				failedMutex.Lock()
+				failedConnections = append(failedConnections, connection.Conn)
+				failedMutex.Unlock()
+			}
+		}(conn)
 	}
+
+	wg.Wait()
 
 	for _, failedConn := range failedConnections {
 		cm.Disconnect(failedConn, applicationID, sessionID)

@@ -78,12 +78,17 @@ func (s *ChatService) CreateConnectionAndStartChat(
 	return &response, err
 }
 
+const MaxExponentialBackoffRetries = 10
+const ExponentialBackoffBaseSleepMs = 100
+
 type ChatHandler struct {
 	conn        *websocket.Conn
 	accessToken string
 	*model.Session
 	*model.Member
 	identity string
+
+	exponentialBackOffAttempts int
 }
 
 func (h *ChatHandler) String() string {
@@ -103,17 +108,16 @@ func (h *ChatHandler) Handle(ctx context.Context, broadcaster *bot.Broadcaster, 
 
 		// Send the user a message already this is the User's original message!
 		h.BroadcastUserPrompt(message, messageRepository, broadcaster, messageType)
-
-		response, err := botConnector.SendMessage(context.Background(), h.accessToken, h.Session.ID, string(message))
+		response, err := h.SendPromptToAIBot(broadcaster, botConnector, messageType, string(message))
 		if err != nil {
-			log.Printf("%s Error while calling AI-BOT, error: %s\n", h, err)
-
-			payload := h.createMessagePayload("system",
-				0, "Error", "system", "server", fmt.Sprintf("Error while calling AI-BOT, error: %s", err))
-			payloadBytes, _ := json.Marshal(payload)
-			broadcaster.Broadcast(h.Session.ApplicationID, h.Session.ID, messageType, payloadBytes)
+			exponentialBackOffError := h.exponentialBackOff()
+			if exponentialBackOffError != nil {
+				h.BroadcastSystemMessage(broadcaster, fmt.Sprintf("AI-BOT Is not available at this moment, please try again later"))
+				break
+			}
 			continue
 		}
+		h.exponentialBackOffAttempts = 0
 
 		reply := response.Reply
 		log.Printf("%s (Bot-Reply): %s", h, reply)
@@ -132,6 +136,21 @@ func (h *ChatHandler) Handle(ctx context.Context, broadcaster *bot.Broadcaster, 
 	}
 
 	return response, err
+}
+
+func (h *ChatHandler) exponentialBackOff() error {
+	h.exponentialBackOffAttempts++
+	if h.exponentialBackOffAttempts > MaxExponentialBackoffRetries-1 {
+		fmt.Printf("%s Exponential Backoff exceeded limit of %d, giving up\n", h, MaxExponentialBackoffRetries)
+		return errors.New(fmt.Sprintf("exponential backoff exceeded limit of %d", MaxExponentialBackoffRetries))
+	}
+	// Simple exponential: 100ms, 200ms, 400ms, 800ms...
+	delay := time.Duration(ExponentialBackoffBaseSleepMs*(1<<h.exponentialBackOffAttempts)) * time.Millisecond
+	fmt.Printf("Attempt %d failed, retrying in %v...\n", h.exponentialBackOffAttempts+1, delay)
+	time.Sleep(delay)
+	fmt.Printf("Sleep over...\n")
+
+	return nil
 }
 
 func (h *ChatHandler) BroadcastUserPrompt(message []byte, messageRepository repository.MessageRepository, broadcaster *bot.Broadcaster, messageType int) {
@@ -181,6 +200,20 @@ func (h *ChatHandler) sendMessageHistoryToClient(ctx context.Context, messageRep
 	}
 }
 
+func (h *ChatHandler) SendPromptToAIBot(broadcaster *bot.Broadcaster, botConnector *bot.AIBotConnector, messageType int, message string) (*bot.AIBotResponse, error) {
+	response, err := botConnector.SendMessage(context.Background(), h.accessToken, h.Session.ID, message)
+	if err == nil {
+		return response, nil
+	}
+
+	go func() {
+		log.Printf("%s Error while calling AI-BOT, error: %s\n", h, err)
+		h.BroadcastSystemMessage(broadcaster, fmt.Sprintf("Error while calling AI-BOT, error: %s", err))
+	}()
+	return nil, err
+
+}
+
 func (h *ChatHandler) createMessagePayload(role string, userID int, username string, memberID string, channel string, message string) model.Message {
 	return model.Message{
 		ApplicationID: h.Session.ApplicationID,
@@ -195,4 +228,11 @@ func (h *ChatHandler) createMessagePayload(role string, userID int, username str
 			Channel:  channel,
 		},
 	}
+}
+
+func (h *ChatHandler) BroadcastSystemMessage(broadcaster *bot.Broadcaster, message string) {
+	payload := h.createMessagePayload("system",
+		0, "System", "system", "server", message)
+	payloadBytes, _ := json.Marshal(payload)
+	broadcaster.Broadcast(h.Session.ApplicationID, h.Session.ID, 1, payloadBytes)
 }
