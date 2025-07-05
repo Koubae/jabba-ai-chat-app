@@ -66,8 +66,6 @@ func (s *ChatService) CreateConnectionAndStartChat(
 	}
 	defer s.Broadcaster.Disconnect(conn, accessToken.ApplicationId, sessionID)
 
-	s.sendMessageHistoryToClient(ctx, conn, accessToken, sessionID, identity)
-
 	handler := &ChatHandler{
 		conn:        conn,
 		accessToken: accessToken.AccessToken,
@@ -76,7 +74,7 @@ func (s *ChatService) CreateConnectionAndStartChat(
 		identity:    identity,
 	}
 
-	response, err = handler.Handle(s.Broadcaster, s.AIBotConnector, s.messageRepository)
+	response, err = handler.Handle(ctx, s.Broadcaster, s.AIBotConnector, s.messageRepository)
 	return &response, err
 }
 
@@ -92,7 +90,9 @@ func (h *ChatHandler) String() string {
 	return h.identity
 }
 
-func (h *ChatHandler) Handle(broadcaster *bot.Broadcaster, botConnector *bot.AIBotConnector, messageRepository repository.MessageRepository) (string, error) {
+func (h *ChatHandler) Handle(ctx context.Context, broadcaster *bot.Broadcaster, botConnector *bot.AIBotConnector, messageRepository repository.MessageRepository) (string, error) {
+	h.sendMessageHistoryToClient(ctx, messageRepository)
+
 	response := "Goodbye"
 	var err error
 	for {
@@ -110,7 +110,7 @@ func (h *ChatHandler) Handle(broadcaster *bot.Broadcaster, botConnector *bot.AIB
 
 		// Send the user a message already this is the User's original message!
 		go func() {
-			payload := createMessagePayload(h.Session.ApplicationID, h.Session.ID, "user",
+			payload := h.createMessagePayload("user",
 				h.Member.UserID, h.Member.Username, h.Member.MemberID, h.Member.Channel, string(message))
 
 			go func() {
@@ -128,7 +128,7 @@ func (h *ChatHandler) Handle(broadcaster *bot.Broadcaster, botConnector *bot.AIB
 		if err != nil {
 			log.Printf("%s Error while calling AI-BOT, error: %s\n", h, err)
 
-			payload := createMessagePayload(h.Session.ApplicationID, h.Session.ID, "system",
+			payload := h.createMessagePayload("system",
 				0, "Error", "system", "server", fmt.Sprintf("Error while calling AI-BOT, error: %s", err))
 			payloadBytes, _ := json.Marshal(payload)
 			broadcaster.Broadcast(h.Session.ApplicationID, h.Session.ID, messageType, payloadBytes)
@@ -137,7 +137,7 @@ func (h *ChatHandler) Handle(broadcaster *bot.Broadcaster, botConnector *bot.AIB
 
 		reply := response.Reply
 		log.Printf("%s (Bot-Reply): %s", h, reply)
-		payload := createMessagePayload(h.Session.ApplicationID, h.Session.ID, "assistant",
+		payload := h.createMessagePayload("assistant",
 			0, "AI Assistant", "bot", "server", reply)
 		payloadBytes, _ := json.Marshal(payload)
 
@@ -154,10 +154,25 @@ func (h *ChatHandler) Handle(broadcaster *bot.Broadcaster, botConnector *bot.AIB
 	return response, err
 }
 
-func createMessagePayload(applicationID string, sessionID string, role string, userID int, username string, memberID string, channel string, message string) model.Message {
+func (h *ChatHandler) sendMessageHistoryToClient(ctx context.Context, messageRepository repository.MessageRepository) {
+	messages, err := messageRepository.GetMessages(ctx, h.Session.ApplicationID, h.Session.ID)
+	if err != nil {
+		log.Printf("%s Error while getting messages from database, error: %s\n", h, err)
+		return
+	}
+	for i := len(messages) - 1; i >= 0; i-- {
+		message := messages[i]
+		payloadBytes, _ := json.Marshal(message)
+		if err := h.conn.WriteMessage(1, payloadBytes); err != nil {
+			fmt.Printf("%s Error sending message to client, message: %+v, error: %s\n", h, message, err)
+		}
+	}
+}
+
+func (h *ChatHandler) createMessagePayload(role string, userID int, username string, memberID string, channel string, message string) model.Message {
 	return model.Message{
-		ApplicationID: applicationID,
-		SessionID:     sessionID,
+		ApplicationID: h.Session.ApplicationID,
+		SessionID:     h.Session.ID,
 		Message:       message,
 		Timestamp:     time.Now().Unix(),
 		Member: model.Member{
@@ -167,20 +182,5 @@ func createMessagePayload(applicationID string, sessionID string, role string, u
 			MemberID: memberID,
 			Channel:  channel,
 		},
-	}
-}
-
-func (s *ChatService) sendMessageHistoryToClient(ctx context.Context, conn *websocket.Conn, accessToken *auth.AccessToken, sessionID string, identity string) {
-	messages, err := s.messageRepository.GetMessages(ctx, accessToken.ApplicationId, sessionID)
-	if err != nil {
-		log.Printf("%s Error while getting messages from database, error: %s\n", identity, err)
-		return
-	}
-	for i := len(messages) - 1; i >= 0; i-- {
-		message := messages[i]
-		payloadBytes, _ := json.Marshal(message)
-		if err := conn.WriteMessage(1, payloadBytes); err != nil {
-			fmt.Printf("%s Error sending message to client, message: %+v, error: %s\n", identity, message, err)
-		}
 	}
 }
