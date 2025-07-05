@@ -3,6 +3,7 @@ package chat_orchestrator
 import (
 	"context"
 	"errors"
+	"github.com/Koubae/jabba-ai-chat-app/internal/chat-orchestrator/container"
 	"github.com/Koubae/jabba-ai-chat-app/internal/chat-orchestrator/infrastructure/api/routes"
 	"github.com/Koubae/jabba-ai-chat-app/pkg/common/settings"
 	"github.com/gin-contrib/cors"
@@ -29,6 +30,8 @@ func init() {
 	default:
 		gin.SetMode(gin.ReleaseMode)
 	}
+
+	container.CreateDIContainer()
 }
 
 func RunServer() {
@@ -84,7 +87,7 @@ func RunServer() {
 	}
 
 	log.Println("Server Shutdown, cleaning up resources")
-	//container.ShutDown() TODO clean up resources!
+	container.ShutDown()
 
 	log.Println("Server exiting")
 }
