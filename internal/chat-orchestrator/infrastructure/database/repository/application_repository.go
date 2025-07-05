@@ -14,14 +14,14 @@ import (
 	"log"
 )
 
-type ApplicationRepository struct {
-	db         *mongodb.Client
-	collection *mongo.Collection
-}
-
 func NewApplicationRepository(db *mongodb.Client) *ApplicationRepository {
 	collection := db.Collection(collections.CollectionApplications)
 	return &ApplicationRepository{db: db, collection: collection}
+}
+
+type ApplicationRepository struct {
+	db         *mongodb.Client
+	collection *mongo.Collection
 }
 
 func (r *ApplicationRepository) Create(ctx context.Context, application *model.Application) error {
@@ -30,7 +30,7 @@ func (r *ApplicationRepository) Create(ctx context.Context, application *model.A
 	}
 	document.OnCreate()
 
-	result, err := r.collection.InsertOne(ctx, application)
+	result, err := r.collection.InsertOne(ctx, document)
 	if r.db.IsDuplicateKeyError(err) {
 		log.Printf("Application %+v already exists!, error: %s\n", document, err)
 		return domainrepository.ErrApplicationAlreadyExists
@@ -107,10 +107,10 @@ func (r *ApplicationRepository) ListWithPagination(ctx context.Context, limit in
 		}
 	}(cursor, ctx)
 
-	var applications []*model.Application
-	if err = cursor.All(ctx, &applications); err != nil {
+	var entities []*model.Application
+	if err = cursor.All(ctx, &entities); err != nil {
 		return nil, fmt.Errorf("failed to decode applications: %w", err)
 	}
-	return applications, nil
+	return entities, nil
 
 }

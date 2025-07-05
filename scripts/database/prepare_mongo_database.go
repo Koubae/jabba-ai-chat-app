@@ -54,7 +54,7 @@ func main() {
 
 	// Sessions
 	collectionSessions := client.Collection(collections.CollectionSessions)
-	err = client.CreateIndex(collectionSessions, ctx, []string{"application_id"}, []int{1})
+	err = client.CreateIndex(collectionSessions, ctx, []string{"application_id", "user_id"}, []int{1, 1})
 	if err != nil {
 		log.Printf("MongoDB error while creating Index in sessions collections, error %v\n", err)
 	}
