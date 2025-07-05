@@ -77,6 +77,24 @@
             margin-top: 0.5rem;
         }
 
+        .message {
+            margin: 5px 0;
+            padding: 5px;
+            border-radius: 5px;
+        }
+
+        .message.user {
+            background-color: #e3f2fd;
+        }
+
+        .message.assistant {
+            background-color: #f3e5f5;
+        }
+
+        .message.system {
+            background-color: #fff3e0;
+        }
+
         h3 {
             margin-top: 0;
             margin-bottom: 1rem;
@@ -169,9 +187,14 @@
 </div>
 
 <script>
-    const WS_ENDPOINT = `ws://localhost:20003/ai/ws/bot/create-connection`;
+    // Endpoints (same as test_client.html)
+    const AUTH_ENDPOINT = 'http://localhost:20000/api/v1/auth/login';
+    const WS_ENDPOINT = `ws://localhost:20002/api/v1/chat/ws/bot/create-connection`;
+    const SESSION_CREATE_ENDPOINT = 'http://localhost:20002/api/v1/session/create';
+
     const clients = Array(4).fill(null).map(() => ({
         socket: null,
+        accessToken: null,
         elements: null
     }));
 
@@ -194,15 +217,48 @@
         if (!client.socket) {
             alert("Please connect first");
             return;
+        } else if (!client.accessToken) {
+            alert("Authenticate first");
+            return;
         }
+
         const text = client.elements.input.value.trim();
         if (text) {
-            const userMsg = document.createElement('div');
-            userMsg.textContent = '🧑 ' + text;
-            client.elements.messages.appendChild(userMsg);
             client.socket.send(text);
             client.elements.input.value = '';
         }
+    }
+
+    function displayMessage(clientIndex, messageData) {
+        const client = clients[clientIndex];
+        const msg = document.createElement('div');
+        msg.className = `message ${messageData.role}`;
+
+        let emoji = '';
+        switch(messageData.role) {
+            case 'user':
+                emoji = '🧑';
+                break;
+            case 'assistant':
+                emoji = '🤖';
+                break;
+            case 'system':
+                emoji = '⚙️';
+                break;
+            default:
+                emoji = '💬';
+        }
+
+        msg.innerHTML = `
+            <strong>${emoji} ${messageData.username || messageData.role}:</strong>
+            ${messageData.message}
+            <small style="color: #666; margin-left: 10px;">
+                ${messageData.timestamp ? new Date(messageData.timestamp * 1000).toLocaleTimeString() : ''}
+            </small>
+        `;
+
+        client.elements.messages.appendChild(msg);
+        client.elements.messages.scrollTop = client.elements.messages.scrollHeight;
     }
 
     function disconnect(clientIndex) {
@@ -218,20 +274,124 @@
         disconnectShow(clientIndex);
     }
 
-    function connect(clientIndex) {
-        const client = clients[clientIndex];
-        const sessionID = client.elements.sessionId.value;
-        client.socket = new WebSocket(WS_ENDPOINT + `/${sessionID}`);
+    async function authenticate(clientIndex) {
+        try {
+            const response = await fetch(AUTH_ENDPOINT, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    username: "user_1",
+                    password: "pass",
+                    application_id: "ai-bot"
+                })
+            });
 
-        client.socket.onmessage = (event) => {
-            const msg = document.createElement('div');
-            msg.className = 'bot';
-            msg.textContent = '🤖 ' + event.data;
-            client.elements.messages.appendChild(msg);
-            client.elements.messages.scrollTop = client.elements.messages.scrollHeight;
-        };
+            if (!response.ok) {
+                throw new Error(`Authentication failed: ${response.status}`);
+            }
 
-        connectedShow(clientIndex);
+            const data = await response.json();
+            clients[clientIndex].accessToken = data.access_token;
+
+            if (!clients[clientIndex].accessToken) {
+                throw new Error('No access token received');
+            }
+
+            console.log(`Client ${clientIndex + 1} authentication successful`);
+            return clients[clientIndex].accessToken;
+
+        } catch (error) {
+            console.error(`Client ${clientIndex + 1} authentication error:`, error);
+            alert(`Client ${clientIndex + 1} authentication failed: ` + error.message);
+            throw error;
+        }
+    }
+
+    async function createSession(clientIndex) {
+        try {
+            const client = clients[clientIndex];
+            const sessionID = client.elements.sessionId.value;
+
+            const response = await fetch(SESSION_CREATE_ENDPOINT, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${client.accessToken}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    session_id: sessionID,
+                    name: "e2e-session"
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error(`Session creation failed: ${response.status}`);
+            }
+
+            const data = await response.json();
+            console.log(`Client ${clientIndex + 1} session created successfully:`, data);
+            return data;
+
+        } catch (error) {
+            console.error(`Client ${clientIndex + 1} session creation error:`, error);
+            alert(`Client ${clientIndex + 1} session creation failed: ` + error.message);
+            throw error;
+        }
+    }
+
+    async function connect(clientIndex) {
+        try {
+            const client = clients[clientIndex];
+
+            // First authenticate
+            await authenticate(clientIndex);
+
+            // Then create session
+            await createSession(clientIndex);
+
+            // Finally establish WebSocket connection with JWT token
+            const sessionID = client.elements.sessionId.value;
+            const wsUrl = `${WS_ENDPOINT}/${sessionID}?access_token=${client.accessToken}`;
+            client.socket = new WebSocket(wsUrl);
+
+            client.socket.onopen = () => {
+                console.log(`Client ${clientIndex + 1} WebSocket connected with JWT token`);
+                connectedShow(clientIndex);
+            };
+
+            client.socket.onmessage = (event) => {
+                try {
+                    // Try to parse as JSON first
+                    const messageData = JSON.parse(event.data);
+                    displayMessage(clientIndex, messageData);
+                } catch (e) {
+                    // Fallback to plain text for backward compatibility
+                    console.log(`Client ${clientIndex + 1} received plain text message:`, event.data);
+                    const msg = document.createElement('div');
+                    msg.className = 'message';
+                    msg.textContent = event.data;
+                    client.elements.messages.appendChild(msg);
+                    client.elements.messages.scrollTop = client.elements.messages.scrollHeight;
+                }
+            };
+
+            client.socket.onclose = () => {
+                console.log(`Client ${clientIndex + 1} WebSocket disconnected`);
+                disconnectShow(clientIndex);
+            };
+
+            client.socket.onerror = (error) => {
+                console.error(`Client ${clientIndex + 1} WebSocket error:`, error);
+                alert(`Client ${clientIndex + 1} WebSocket connection failed`);
+                disconnectShow(clientIndex);
+            };
+
+        } catch (error) {
+            console.error(`Client ${clientIndex + 1} connection failed:`, error);
+            disconnectShow(clientIndex);
+        }
     }
 
     function disconnectShow(clientIndex) {
@@ -248,11 +408,12 @@
         client.elements.connectionStatus.textContent = 'connected';
     }
 
+    // Auto-connect all clients when page loads
     window.addEventListener('load', () => {
         clients.forEach((client, index) => {
             connect(index);
-        })
-    })
+        });
+    });
 
 </script>
 </body>
