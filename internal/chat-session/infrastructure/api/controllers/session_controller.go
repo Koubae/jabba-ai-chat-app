@@ -48,19 +48,16 @@ func (controller *SessionController) CreateSession(c *gin.Context) {
 	c.JSON(http.StatusOK, handler.Response)
 }
 
-// WebSocket upgrader
 var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
 	CheckOrigin: func(r *http.Request) bool {
-		return true // In production, restrict this!
+		return true // TODO: Check how to fix this before go in production!
 	},
 }
 
 func (controller *SessionController) CreateConnection(c *gin.Context) {
 	sessionID := c.Param("session_id")
-
-	fmt.Println(sessionID)
 
 	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
 	defer cancel()
@@ -77,24 +74,34 @@ func (controller *SessionController) CreateConnection(c *gin.Context) {
 		log.Println("WebSocket upgrade error:", err)
 		return
 	}
-	defer conn.Close()
+	defer func(conn *websocket.Conn) {
+		err := conn.Close()
+		if err != nil {
+			log.Printf("Error while closing WebSocket connection, error: %s\n\n", err)
+		}
+	}(conn)
 
 	accessTokenObj, _ := ctx.Value("access_token").(*auth.AccessToken)
-	fmt.Println("Created WebSocket connection: ApplicationID: %s, UserID: %s, Username: %s",
-		accessTokenObj.ApplicationId, accessTokenObj.UserId, accessTokenObj.Username)
+
+	identity := fmt.Sprintf("[%s][%s][%s (%d)] (WebSocket)",
+		accessTokenObj.ApplicationId, sessionID, accessTokenObj.Username, accessTokenObj.UserId)
+	fmt.Printf("Created WebSocket connection %s\n", identity)
+
+	broadcaster := container.Container.Broadcaster
+	broadcaster.Connect(accessTokenObj.ApplicationId, sessionID, accessTokenObj.UserId, accessTokenObj.Username, conn)
 
 	for {
 		messageType, message, err := conn.ReadMessage()
 		if err != nil {
-			log.Println("read:", err)
+			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure, websocket.CloseNoStatusReceived) {
+				log.Printf("%s Error reading message | Terminating connection, error: %s\n", identity, err)
+			} else {
+				log.Printf("%s client closed connection | Terminagin connection\n", identity)
+			}
 			break
 		}
-		log.Printf("received: %s", message)
 
-		err = conn.WriteMessage(messageType, message)
-		if err != nil {
-			log.Println("write:", err)
-			break
-		}
+		log.Printf("%s received: %s", identity, message)
+		broadcaster.Broadcast(accessTokenObj.ApplicationId, sessionID, messageType, message)
 	}
 }
