@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/Koubae/jabba-ai-chat-app/internal/chat-session/domain/model"
 	"github.com/Koubae/jabba-ai-chat-app/internal/chat-session/domain/repository"
 	"github.com/Koubae/jabba-ai-chat-app/internal/chat-session/infrastructure/bot"
 	"github.com/Koubae/jabba-ai-chat-app/pkg/auth"
@@ -87,18 +88,8 @@ func (s *ChatService) CreateConnectionAndStartChat(ctx context.Context, conn *we
 	return &response, err
 }
 
-type Message struct {
-	ApplicationID string `json:"application_id"`
-	SessionID     string `json:"session_id"`
-	Role          string `json:"role"`
-	UserID        int    `json:"user_id"`
-	Username      string `json:"username"`
-	Message       string `json:"message"`
-	Timestamp     int64  `json:"timestamp"`
-}
-
 func createMessagePayload(applicationID string, sessionID string, role string, userID int, username string, message string) []byte {
-	payload := Message{
+	payload := model.Message{
 		ApplicationID: applicationID,
 		SessionID:     sessionID,
 		Role:          role,

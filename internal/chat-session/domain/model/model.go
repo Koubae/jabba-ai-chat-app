@@ -9,3 +9,13 @@ type Session struct {
 	Created       time.Time `json:"created"`
 	Updated       time.Time `json:"updated"`
 }
+
+type Message struct {
+	ApplicationID string `json:"application_id"`
+	SessionID     string `json:"session_id"`
+	Role          string `json:"role"`
+	UserID        int    `json:"user_id"`
+	Username      string `json:"username"`
+	Message       string `json:"message"`
+	Timestamp     int64  `json:"timestamp"`
+}
