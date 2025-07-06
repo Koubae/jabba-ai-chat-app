@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"fmt"
 	"github.com/Koubae/jabba-ai-chat-app/internal/chat-orchestrator/domain/application/model"
 	domainrepository "github.com/Koubae/jabba-ai-chat-app/internal/chat-orchestrator/domain/application/repository"
 	"github.com/Koubae/jabba-ai-chat-app/internal/chat-orchestrator/infrastructure/database/collections"
@@ -60,20 +61,59 @@ func TestApplicationRepository(t *testing.T) {
 	defer cancel()
 
 	db := mongodb.GetClient()
-	repository := NewApplicationRepository(db, ctx)
+	repository := NewApplicationRepository(db)
 
 	name := "applicationOne-test" + utils.RandomString(10)
 	applicationOne := &model.Application{Name: name}
-	err := repository.Create(applicationOne)
+	err := repository.Create(ctx, applicationOne)
 	assert.NoError(t, err)
 
 	applicationID := applicationOne.ID
+
+	t.Run("ListWithPagination", func(t *testing.T) {
+		limit := int64(10)
+		offset := int64(0)
+
+		applicationsExpected := make([]*model.Application, 0, 10)
+		for i := 0; i < 10; i++ {
+			name := fmt.Sprintf("application-test-%s-%d", "application-test", i)
+			application := &model.Application{Name: name}
+			err := repository.Create(ctx, application)
+			assert.NoError(t, err)
+			applicationsExpected = append(applicationsExpected, application)
+		}
+
+		applications, err := repository.ListWithPagination(ctx, limit, offset)
+		assert.NoError(t, err)
+		assert.Equal(t, len(applicationsExpected), len(applications))
+
+	})
+
+	t.Run("ListWithPaginationNotFoundPassedOffset", func(t *testing.T) {
+		limit := int64(10)
+		offset := int64(50)
+
+		applicationsExpected := make([]*model.Application, 0, 10)
+		idStartFrom := 20
+		for i := 0; i < 10; i++ {
+			name := fmt.Sprintf("application-test-%s-%d", "application-test", i+idStartFrom)
+			application := &model.Application{Name: name}
+			err := repository.Create(ctx, application)
+			assert.NoError(t, err)
+			applicationsExpected = append(applicationsExpected, application)
+		}
+
+		applications, err := repository.ListWithPagination(ctx, limit, offset)
+		assert.NoError(t, err)
+		assert.Equal(t, 0, len(applications))
+
+	})
 
 	t.Run("Create", func(t *testing.T) {
 		name := "application-test" + utils.RandomString(10)
 		application := &model.Application{Name: name}
 
-		err := repository.Create(application)
+		err := repository.Create(ctx, application)
 		assert.NoError(t, err)
 		assert.NotEmpty(t, application.ID)
 		assert.NotEmpty(t, application.Updated)
@@ -83,39 +123,41 @@ func TestApplicationRepository(t *testing.T) {
 		name := "application-test" + utils.RandomString(10)
 		application := &model.Application{Name: name}
 
-		err := repository.Create(application)
+		err := repository.Create(ctx, application)
 		assert.NoError(t, err)
 		assert.NotEmpty(t, application.ID)
 
 		application2 := &model.Application{Name: name}
-		err2 := repository.Create(application2)
-		assert.ErrorIs(t, err2, domainrepository.ErrApplicationOnCreate)
+		err2 := repository.Create(ctx, application2)
+		assert.Error(t, err2)
+		assert.ErrorIs(t, err2, domainrepository.ErrApplicationAlreadyExists)
 
 	})
 
 	t.Run("GetByID", func(t *testing.T) {
-		application, err := repository.GetByID(applicationID)
+		application, err := repository.GetByID(ctx, applicationID)
 		assert.NoError(t, err)
 		assert.Equal(t, applicationOne.ID, application.ID)
 		assert.Equal(t, applicationOne.Name, application.Name)
 
 		t.Run("GetByIDNotFound", func(t *testing.T) {
 			objectID := primitive.NewObjectID().Hex()
-			application, err := repository.GetByID(objectID)
+			application, err := repository.GetByID(ctx, objectID)
 			assert.ErrorIs(t, err, domainrepository.ErrApplicationNotFound)
 			assert.Nil(t, application)
 		})
 
 		t.Run("GetByName", func(t *testing.T) {
-			application, err := repository.GetByName(applicationOne.Name)
+			application, err := repository.GetByName(ctx, applicationOne.Name)
 			assert.NoError(t, err)
 			assert.Equal(t, applicationOne.ID, application.ID)
 			assert.Equal(t, applicationOne.Name, application.Name)
 		})
 		t.Run("GetByNameNotFound", func(t *testing.T) {
-			application, err := repository.GetByName("potato")
+			application, err := repository.GetByName(ctx, "potato")
 			assert.ErrorIs(t, err, domainrepository.ErrApplicationNotFound)
 			assert.Nil(t, application)
 		})
 	})
+
 }

@@ -46,11 +46,13 @@ func (s *ChatService) CreateConnectionAndStartChat(
 	if !ok {
 		return nil, fmt.Errorf("access_token not found, cannot create session")
 	}
-	identity := fmt.Sprintf("[%s][%s]> Username=%s UserID=%d, Member=%s, Channel=%s (WebSocket)",
-		accessToken.ApplicationId, sessionID, accessToken.Username, accessToken.UserId, memberID, channel)
+	identity := fmt.Sprintf(
+		"[%s][%s]> Username=%s IdentityID=%d, Member=%s, Channel=%s (WebSocket)",
+		accessToken.ApplicationId, sessionID, accessToken.Username, accessToken.UserId, memberID, channel,
+	)
 	fmt.Printf("Created WebSocket connection %s\n", identity)
 
-	session, _ := s.sessionRepository.Get(ctx, accessToken.ApplicationId, sessionID)
+	session, _ := s.sessionRepository.Get(ctx, accessToken.ApplicationId, sessionID, accessToken.UserId)
 	if session == nil {
 		log.Printf("Session %+v does not exists for %s\n", session, identity)
 		return nil, errors.New("session does not exists, you must create one first")
@@ -58,7 +60,15 @@ func (s *ChatService) CreateConnectionAndStartChat(
 
 	response := "Goodbye"
 	var err error
-	err = s.Broadcaster.Connect(conn, accessToken.ApplicationId, sessionID, accessToken.UserId, accessToken.Username, memberID, channel)
+	err = s.Broadcaster.Connect(
+		conn,
+		accessToken.ApplicationId,
+		sessionID,
+		accessToken.UserId,
+		accessToken.Username,
+		memberID,
+		channel,
+	)
 	if err != nil {
 		response = "Not Allow to connect"
 		log.Printf("%s Could not connect client to broadcaster, will close connection, error: %s\n", identity, err)
@@ -97,7 +107,12 @@ func (h *ChatHandler) String() string {
 	return h.identity
 }
 
-func (h *ChatHandler) Handle(ctx context.Context, broadcaster *bot.Broadcaster, botConnector *bot.AIBotConnector, messageRepository repository.MessageRepository) (string, error) {
+func (h *ChatHandler) Handle(
+	ctx context.Context,
+	broadcaster *bot.Broadcaster,
+	botConnector *bot.AIBotConnector,
+	messageRepository repository.MessageRepository,
+) (string, error) {
 	h.sendMessageHistoryToClient(ctx, messageRepository)
 
 	response := "Goodbye"
@@ -128,7 +143,10 @@ func (h *ChatHandler) exponentialBackOff(broadcaster *bot.Broadcaster) error {
 	h.exponentialBackOffAttempts++
 	if h.exponentialBackOffAttempts > MaxExponentialBackoffRetries-1 {
 		fmt.Printf("%s Exponential Backoff exceeded limit of %d, giving up\n", h, MaxExponentialBackoffRetries)
-		h.broadcastSystemMessage(broadcaster, fmt.Sprintf("AI-BOT Is not available at this moment, please try again later"))
+		h.broadcastSystemMessage(
+			broadcaster,
+			fmt.Sprintf("AI-BOT Is not available at this moment, please try again later"),
+		)
 		return BackOffAttemptExceeded
 	}
 	// Simple exponential: 100ms, 200ms, 400ms, 800ms...
@@ -143,7 +161,12 @@ func (h *ChatHandler) exponentialBackOff(broadcaster *bot.Broadcaster) error {
 func (h *ChatHandler) recV() (int, []byte, error) {
 	messageType, message, err := h.conn.ReadMessage()
 	if err != nil {
-		if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure, websocket.CloseNoStatusReceived) {
+		if websocket.IsUnexpectedCloseError(
+			err,
+			websocket.CloseGoingAway,
+			websocket.CloseAbnormalClosure,
+			websocket.CloseNoStatusReceived,
+		) {
 			log.Printf("%s Error reading message | Terminating connection, error: %s\n", h, err)
 			err = errors.New("unexpected error while reading message")
 		} else {
@@ -155,10 +178,17 @@ func (h *ChatHandler) recV() (int, []byte, error) {
 	return messageType, message, err
 }
 
-func (h *ChatHandler) broadcastUserPrompt(message []byte, messageRepository repository.MessageRepository, broadcaster *bot.Broadcaster, messageType int) {
+func (h *ChatHandler) broadcastUserPrompt(
+	message []byte,
+	messageRepository repository.MessageRepository,
+	broadcaster *bot.Broadcaster,
+	messageType int,
+) {
 	go func() {
-		payload := h.createMessagePayload("user",
-			h.Member.UserID, h.Member.Username, h.Member.MemberID, h.Member.Channel, string(message))
+		payload := h.createMessagePayload(
+			"user",
+			h.Member.UserID, h.Member.Username, h.Member.MemberID, h.Member.Channel, string(message),
+		)
 
 		go func() {
 			err := messageRepository.AddMessage(context.Background(), h.Session.ApplicationID, h.Session.ID, &payload)
@@ -172,11 +202,19 @@ func (h *ChatHandler) broadcastUserPrompt(message []byte, messageRepository repo
 	}()
 }
 
-func (h *ChatHandler) broadcastAIBotReply(response *bot.AIBotResponse, messageRepository repository.MessageRepository, message []byte, broadcaster *bot.Broadcaster, messageType int) {
+func (h *ChatHandler) broadcastAIBotReply(
+	response *bot.AIBotResponse,
+	messageRepository repository.MessageRepository,
+	message []byte,
+	broadcaster *bot.Broadcaster,
+	messageType int,
+) {
 	reply := response.Reply
 	log.Printf("%s (Bot-Reply): %s", h, reply)
-	payload := h.createMessagePayload("assistant",
-		0, "AI Assistant", "bot", "server", reply)
+	payload := h.createMessagePayload(
+		"assistant",
+		0, "AI Assistant", "bot", "server", reply,
+	)
 	payloadBytes, _ := json.Marshal(payload)
 
 	go func() {
@@ -189,7 +227,11 @@ func (h *ChatHandler) broadcastAIBotReply(response *bot.AIBotResponse, messageRe
 	broadcaster.Broadcast(h.Session.ApplicationID, h.Session.ID, messageType, payloadBytes)
 }
 
-func (h *ChatHandler) sendPromptToAIBot(broadcaster *bot.Broadcaster, botConnector *bot.AIBotConnector, message string) (*bot.AIBotResponse, error) {
+func (h *ChatHandler) sendPromptToAIBot(
+	broadcaster *bot.Broadcaster,
+	botConnector *bot.AIBotConnector,
+	message string,
+) (*bot.AIBotResponse, error) {
 	response, err := botConnector.SendMessage(context.Background(), h.accessToken, h.Session.ID, message)
 	if err == nil {
 		return response, nil
@@ -219,13 +261,22 @@ func (h *ChatHandler) sendMessageHistoryToClient(ctx context.Context, messageRep
 }
 
 func (h *ChatHandler) broadcastSystemMessage(broadcaster *bot.Broadcaster, message string) {
-	payload := h.createMessagePayload("system",
-		0, "System", "system", "server", message)
+	payload := h.createMessagePayload(
+		"system",
+		0, "System", "system", "server", message,
+	)
 	payloadBytes, _ := json.Marshal(payload)
 	broadcaster.Broadcast(h.Session.ApplicationID, h.Session.ID, 1, payloadBytes)
 }
 
-func (h *ChatHandler) createMessagePayload(role string, userID int, username string, memberID string, channel string, message string) model.Message {
+func (h *ChatHandler) createMessagePayload(
+	role string,
+	userID int64,
+	username string,
+	memberID string,
+	channel string,
+	message string,
+) model.Message {
 	return model.Message{
 		ApplicationID: h.Session.ApplicationID,
 		SessionID:     h.Session.ID,

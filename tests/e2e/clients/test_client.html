@@ -93,6 +93,7 @@
     const connectionStatusWrapper = document.querySelector('.connection-status');
     let sessionID = inputSessionId.value;
 
+    const APPLICATION_ID = "ai-bot";
     const MEMBER_ID = "bot-member"
     const CHANNEL = "fake-client"
 
@@ -145,7 +146,7 @@
                 body: JSON.stringify({
                     username: "user_1",
                     password: "pass",
-                    application_id: "ai-bot"
+                    application_id: APPLICATION_ID
                 })
             });
 
@@ -173,6 +174,7 @@
 
     async function createSession() {
         try {
+            url = `${SESSION_CREATE_ENDPOINT}`
             const response = await fetch(SESSION_CREATE_ENDPOINT, {
                 method: 'POST',
                 headers: {
@@ -181,7 +183,9 @@
                 },
                 body: JSON.stringify({
                     session_id: sessionID,
-                    name: "e2e-session"
+                    name: "e2e-session",
+                    member_id: MEMBER_ID,
+                    channel: CHANNEL,
                 })
             });
 

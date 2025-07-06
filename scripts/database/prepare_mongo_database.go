@@ -48,13 +48,14 @@ func main() {
 	// Users
 	collectionUsers := client.Collection(collections.CollectionUsers)
 	err = client.CreateCompoundUniqueIndex(collectionUsers, ctx, []string{"application_id", "username"})
+	err = client.CreateCompoundUniqueIndex(collectionUsers, ctx, []string{"application_id", "identity_id"})
 	if err != nil {
 		log.Printf("MongoDB error while creating compound unique index of users, error %v\n", err)
 	}
 
 	// Sessions
 	collectionSessions := client.Collection(collections.CollectionSessions)
-	err = client.CreateIndex(collectionSessions, ctx, []string{"application_id"}, []int{1})
+	err = client.CreateCompoundUniqueIndex(collectionSessions, ctx, []string{"application_id", "user_id", "name"})
 	if err != nil {
 		log.Printf("MongoDB error while creating Index in sessions collections, error %v\n", err)
 	}

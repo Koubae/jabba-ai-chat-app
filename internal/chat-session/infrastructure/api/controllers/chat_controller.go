@@ -26,7 +26,6 @@ func (controller *ChatController) CreateConnection(c *gin.Context) {
 	memberID := c.Query("member_id")
 	channel := c.Query("channel")
 
-	// Validate required query parameters
 	if memberID == "" {
 		c.JSON(400, gin.H{"error": "member_id query parameter is required"})
 		return

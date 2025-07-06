@@ -8,13 +8,13 @@ import (
 
 type ApplicationRepository interface {
 	Create(ctx context.Context, application *model.Application) error
-	GetByID(id int64) (*model.Application, error)
-	GetByName(name string) (*model.Application, error)
+	GetByID(ctx context.Context, id string) (*model.Application, error)
+	GetByName(ctx context.Context, name string) (*model.Application, error)
+	ListWithPagination(ctx context.Context, limit int64, offset int64) ([]*model.Application, error)
 }
 
 var (
-	ErrApplicationOnCreate         = errors.New("APPLICATION_ERROR_ON_CREATE")
-	ErrApplicationNotFound         = errors.New("APPLICATION_NOT_FOUND")
-	ErrApplicationAlreadyExists    = errors.New("APPLICATION_ALREADY_EXISTS")
-	ErrApplicationIdentityMismatch = errors.New("APPLICATION_IDENTITY_MISMATCH")
+	ErrApplicationAlreadyExists = errors.New("APPLICATION_ALREADY_EXISTS")
+	ErrApplicationOnCreate      = errors.New("APPLICATION_ERROR_ON_CREATE")
+	ErrApplicationNotFound      = errors.New("APPLICATION_NOT_FOUND")
 )

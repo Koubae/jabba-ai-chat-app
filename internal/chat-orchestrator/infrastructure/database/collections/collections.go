@@ -21,6 +21,7 @@ type User struct {
 	mongodb.EntityID   `bson:",inline"`
 	mongodb.Timestamps `bson:",inline"`
 	ApplicationID      *primitive.ObjectID `bson:"application_id"`
+	IdentityID         int64               `bson:"identity_id"`
 	Username           string              `bson:"username"`
 }
 
@@ -28,6 +29,7 @@ type Session struct {
 	mongodb.EntityID   `bson:",inline"`
 	mongodb.Timestamps `bson:",inline"`
 	ApplicationID      *primitive.ObjectID `bson:"application_id"`
+	UserID             *primitive.ObjectID `bson:"user_id"`
 	Name               string              `bson:"name"`
 }
 

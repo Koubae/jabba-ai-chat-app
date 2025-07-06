@@ -23,7 +23,13 @@ type SessionService struct {
 	*bot.AIBotConnector
 }
 
-func (s *SessionService) CreateSession(ctx context.Context, sessionID string, name string) (*model.Session, error) {
+func (s *SessionService) CreateSession(
+	ctx context.Context,
+	sessionID string,
+	name string,
+	memberID string,
+	channel string,
+) (*model.Session, error) {
 	accessToken, ok := ctx.Value("access_token").(*auth.AccessToken)
 	if !ok {
 		return nil, fmt.Errorf("access_token not found, cannot create session")
@@ -34,12 +40,28 @@ func (s *SessionService) CreateSession(ctx context.Context, sessionID string, na
 		ApplicationID: accessToken.ApplicationId,
 		ID:            sessionID,
 		Name:          name,
-		Created:       time.Now().UTC(),
-		Updated:       time.Now().UTC(),
+		Owner: &model.Member{
+			Role:     "user",
+			UserID:   accessToken.UserId,
+			Username: accessToken.Username,
+			MemberID: memberID,
+			Channel:  channel,
+		},
+		Created: time.Now().UTC(),
+		Updated: time.Now().UTC(),
 	}
 
-	sessionInCache, _ := s.repository.Get(ctx, session.ApplicationID, session.ID)
+	sessionInCache, _ := s.repository.Get(ctx, session.ApplicationID, session.ID, accessToken.UserId)
 	if sessionInCache != nil {
+		if !sessionInCache.IsSameOwner(session) {
+			log.Printf(
+				"Session already exists but belongs to a different owner.\n-Request: %+v\n-Found: %+v\n",
+				session,
+				sessionInCache,
+			)
+			return nil, model.ErrIsNotOwnerOfSession
+		}
+
 		log.Printf("Session %+v already exists in cache, returning it\n", session)
 		return sessionInCache, nil
 	}
@@ -53,8 +75,9 @@ func (s *SessionService) CreateSession(ctx context.Context, sessionID string, na
 		}
 	}()
 
-	err := s.repository.Create(ctx, session)
+	err := s.repository.Create(ctx, session, accessToken.UserId)
 	if err != nil {
+		log.Printf("Error while creating Session %+v, erorr: %s\n", session, err)
 		return nil, err
 	}
 
@@ -62,8 +85,11 @@ func (s *SessionService) CreateSession(ctx context.Context, sessionID string, na
 	return session, nil
 }
 
-func (s *SessionService) GetSession(ctx context.Context, applicationID string, sessionID string) (*model.Session, error) {
-	session, err := s.repository.Get(ctx, applicationID, sessionID)
+func (s *SessionService) GetSession(ctx context.Context, applicationID string, sessionID string, identityID int64) (
+	*model.Session,
+	error,
+) {
+	session, err := s.repository.Get(ctx, applicationID, sessionID, identityID)
 	if err != nil {
 		return nil, err
 	}

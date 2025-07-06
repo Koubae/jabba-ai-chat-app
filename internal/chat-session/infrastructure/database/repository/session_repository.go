@@ -33,18 +33,23 @@ type SessionRepository struct {
 	ttlSeconds         time.Duration
 }
 
-func (r *SessionRepository) Create(ctx context.Context, session *model.Session) error {
+func (r *SessionRepository) Create(ctx context.Context, session *model.Session, identityID int64) error {
 	document, err := json.Marshal(session)
 	if err != nil {
 		return err
 	}
 
-	key := r.getCacheKey(session.ApplicationID, session.ID)
+	key := r.getCacheKey(session.ApplicationID, session.ID, identityID)
 	return r.db.DB.Set(ctx, key, document, r.ttlSeconds).Err()
 }
 
-func (r *SessionRepository) Get(ctx context.Context, applicationID string, sessionID string) (*model.Session, error) {
-	key := r.getCacheKey(applicationID, sessionID)
+func (r *SessionRepository) Get(
+	ctx context.Context,
+	applicationID string,
+	sessionID string,
+	identityID int64,
+) (*model.Session, error) {
+	key := r.getCacheKey(applicationID, sessionID, identityID)
 
 	document, err := r.db.DB.Get(ctx, key).Bytes()
 	if errors.Is(err, redisadapter.Nil) || document == nil {
@@ -60,8 +65,8 @@ func (r *SessionRepository) Get(ctx context.Context, applicationID string, sessi
 	return &session, nil
 }
 
-func (r *SessionRepository) getCacheKey(applicationID string, sessionID string) string {
-	pattern := "%s%s:%s:%s"
-	return fmt.Sprintf(pattern, r.cacheServicePrefix, SessionCacheKey, applicationID, sessionID)
+func (r *SessionRepository) getCacheKey(applicationID string, sessionID string, identityID int64) string {
+	pattern := "%s%s:%s:%s:%d"
+	return fmt.Sprintf(pattern, r.cacheServicePrefix, SessionCacheKey, applicationID, sessionID, identityID)
 
 }
