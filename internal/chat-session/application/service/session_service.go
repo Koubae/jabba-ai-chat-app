@@ -51,7 +51,7 @@ func (s *SessionService) CreateSession(
 		Updated: time.Now().UTC(),
 	}
 
-	sessionInCache, _ := s.repository.Get(ctx, session.ApplicationID, session.ID)
+	sessionInCache, _ := s.repository.Get(ctx, session.ApplicationID, session.ID, accessToken.UserId)
 	if sessionInCache != nil {
 		if !sessionInCache.IsSameOwner(session) {
 			log.Printf(
@@ -75,7 +75,7 @@ func (s *SessionService) CreateSession(
 		}
 	}()
 
-	err := s.repository.Create(ctx, session)
+	err := s.repository.Create(ctx, session, accessToken.UserId)
 	if err != nil {
 		log.Printf("Error while creating Session %+v, erorr: %s\n", session, err)
 		return nil, err
@@ -85,11 +85,11 @@ func (s *SessionService) CreateSession(
 	return session, nil
 }
 
-func (s *SessionService) GetSession(ctx context.Context, applicationID string, sessionID string) (
+func (s *SessionService) GetSession(ctx context.Context, applicationID string, sessionID string, identityID int64) (
 	*model.Session,
 	error,
 ) {
-	session, err := s.repository.Get(ctx, applicationID, sessionID)
+	session, err := s.repository.Get(ctx, applicationID, sessionID, identityID)
 	if err != nil {
 		return nil, err
 	}

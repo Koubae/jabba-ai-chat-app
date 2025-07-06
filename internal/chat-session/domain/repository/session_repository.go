@@ -7,8 +7,8 @@ import (
 )
 
 type SessionRepository interface {
-	Create(ctx context.Context, session *model.Session) error
-	Get(ctx context.Context, applicationID string, sessionID string) (*model.Session, error)
+	Create(ctx context.Context, session *model.Session, identityID int64) error
+	Get(ctx context.Context, applicationID string, sessionID string, identityID int64) (*model.Session, error)
 }
 
 var (

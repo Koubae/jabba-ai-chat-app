@@ -48,9 +48,10 @@ func TestRedisSessionRepository(t *testing.T) {
 	db := redis.GetClient()
 	repository := NewSessionRepository(db)
 
+	identityID := int64(1)
 	owner := &model.Member{
 		Role:     "user",
-		UserID:   1,
+		UserID:   identityID,
 		Username: "test-user",
 		MemberID: "device-1234",
 		Channel:  "mobile",
@@ -59,48 +60,54 @@ func TestRedisSessionRepository(t *testing.T) {
 	applicationID := "application-id-test" + utils.RandomString(20)
 	sessionName := "session-test" + utils.RandomString(20)
 
-	t.Run("Create", func(t *testing.T) {
-		session := &model.Session{
-			ApplicationID: applicationID,
-			ID:            fmt.Sprintf("session-id-test-%d", utils.RandInt(1, 99999)),
-			Name:          sessionName,
-			Owner:         owner,
-			Created:       time.Now().UTC(),
-			Updated:       time.Now().UTC(),
-		}
+	t.Run(
+		"Create", func(t *testing.T) {
+			session := &model.Session{
+				ApplicationID: applicationID,
+				ID:            fmt.Sprintf("session-id-test-%d", utils.RandInt(1, 99999)),
+				Name:          sessionName,
+				Owner:         owner,
+				Created:       time.Now().UTC(),
+				Updated:       time.Now().UTC(),
+			}
 
-		err := repository.Create(ctx, session)
-		assert.NoError(t, err)
-	})
+			err := repository.Create(ctx, session, identityID)
+			assert.NoError(t, err)
+		},
+	)
 
-	t.Run("Get", func(t *testing.T) {
-		session := &model.Session{
-			ApplicationID: applicationID,
-			ID:            fmt.Sprintf("session-id-test-%d", utils.RandInt(1, 99999)),
-			Name:          sessionName,
-			Owner:         owner,
-			Created:       time.Now().UTC(),
-			Updated:       time.Now().UTC(),
-		}
+	t.Run(
+		"Get", func(t *testing.T) {
+			session := &model.Session{
+				ApplicationID: applicationID,
+				ID:            fmt.Sprintf("session-id-test-%d", utils.RandInt(1, 99999)),
+				Name:          sessionName,
+				Owner:         owner,
+				Created:       time.Now().UTC(),
+				Updated:       time.Now().UTC(),
+			}
 
-		err := repository.Create(ctx, session)
-		assert.NoError(t, err)
+			err := repository.Create(ctx, session, identityID)
+			assert.NoError(t, err)
 
-		sessionInCache, err := repository.Get(ctx, session.ApplicationID, session.ID)
-		assert.NoError(t, err)
-		assert.Equal(t, session.ID, sessionInCache.ID)
-		assert.Equal(t, session.ApplicationID, sessionInCache.ApplicationID)
-		assert.Equal(t, session.Name, sessionInCache.Name)
-		assert.Equal(t, session.Created, sessionInCache.Created)
-		assert.Equal(t, session.Updated, sessionInCache.Updated)
+			sessionInCache, err := repository.Get(ctx, session.ApplicationID, session.ID, identityID)
+			assert.NoError(t, err)
+			assert.Equal(t, session.ID, sessionInCache.ID)
+			assert.Equal(t, session.ApplicationID, sessionInCache.ApplicationID)
+			assert.Equal(t, session.Name, sessionInCache.Name)
+			assert.Equal(t, session.Created, sessionInCache.Created)
+			assert.Equal(t, session.Updated, sessionInCache.Updated)
 
-	})
+		},
+	)
 
-	t.Run("GetNotFound", func(t *testing.T) {
-		sessionInCache, err := repository.Get(ctx, applicationID, "potato")
-		assert.ErrorIs(t, err, domainrepository.ErrSessionNotFound)
-		assert.Nil(t, sessionInCache)
+	t.Run(
+		"GetNotFound", func(t *testing.T) {
+			sessionInCache, err := repository.Get(ctx, applicationID, "potato", identityID)
+			assert.ErrorIs(t, err, domainrepository.ErrSessionNotFound)
+			assert.Nil(t, sessionInCache)
 
-	})
+		},
+	)
 
 }

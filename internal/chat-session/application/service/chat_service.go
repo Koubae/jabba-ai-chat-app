@@ -47,12 +47,12 @@ func (s *ChatService) CreateConnectionAndStartChat(
 		return nil, fmt.Errorf("access_token not found, cannot create session")
 	}
 	identity := fmt.Sprintf(
-		"[%s][%s]> Username=%s UserID=%d, Member=%s, Channel=%s (WebSocket)",
+		"[%s][%s]> Username=%s IdentityID=%d, Member=%s, Channel=%s (WebSocket)",
 		accessToken.ApplicationId, sessionID, accessToken.Username, accessToken.UserId, memberID, channel,
 	)
 	fmt.Printf("Created WebSocket connection %s\n", identity)
 
-	session, _ := s.sessionRepository.Get(ctx, accessToken.ApplicationId, sessionID)
+	session, _ := s.sessionRepository.Get(ctx, accessToken.ApplicationId, sessionID, accessToken.UserId)
 	if session == nil {
 		log.Printf("Session %+v does not exists for %s\n", session, identity)
 		return nil, errors.New("session does not exists, you must create one first")
