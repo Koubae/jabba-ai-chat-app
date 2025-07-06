@@ -24,7 +24,13 @@ type CreateSessionHandler struct {
 }
 
 func (h *CreateSessionHandler) Handle(ctx context.Context) error {
-	session, err := h.SessionService.Create(ctx, h.Command.ApplicationID, h.Command.IdentityID, h.Command.Username, h.Command.Name)
+	session, err := h.SessionService.Create(
+		ctx,
+		h.Command.ApplicationID,
+		h.Command.IdentityID,
+		h.Command.Username,
+		h.Command.Name,
+	)
 	if err != nil {
 		return err
 	}
@@ -56,6 +62,7 @@ func (h *GetSessionHandler) Handle(ctx context.Context) error {
 type ListSessionRequest struct {
 	ApplicationID string `json:"application_id"`
 	IdentityID    int64  `json:"identity_id"`
+	Username      string `json:"username"`
 	Limit         int64
 	Offset        int64
 }
@@ -108,6 +115,7 @@ func (h *ListSessionHandler) Handle(ctx context.Context) error {
 		ctx,
 		h.Command.ApplicationID,
 		h.Command.IdentityID,
+		h.Command.Username,
 		h.Command.Limit,
 		h.Command.Offset,
 	)
@@ -132,7 +140,13 @@ type StartSessionHandler struct {
 }
 
 func (h *StartSessionHandler) Handle(ctx context.Context) error {
-	response, err := h.SessionService.StartSession(ctx, h.ChatSessionConnector, h.Command.SessionName, h.Command.MemberID, h.Command.Channel)
+	response, err := h.SessionService.StartSession(
+		ctx,
+		h.ChatSessionConnector,
+		h.Command.SessionName,
+		h.Command.MemberID,
+		h.Command.Channel,
+	)
 	if err != nil {
 		return err
 	}

@@ -28,7 +28,13 @@ type SessionService struct {
 	UserService        *UserService
 }
 
-func (s *SessionService) Create(ctx context.Context, applicationID string, IdentityID int64, username string, name string) (*model.Session, error) {
+func (s *SessionService) Create(
+	ctx context.Context,
+	applicationID string,
+	IdentityID int64,
+	username string,
+	name string,
+) (*model.Session, error) {
 	application, err := s.ApplicationService.Get(ctx, applicationID)
 	if err != nil {
 		log.Printf("Application %s not found\n", applicationID)
@@ -58,10 +64,20 @@ func (s *SessionService) Create(ctx context.Context, applicationID string, Ident
 	return session, nil
 }
 
-func (s *SessionService) getOrCreateUser(ctx context.Context, applicationID string, IdentityID int64, username string, err error) (*model.User, error) {
+func (s *SessionService) getOrCreateUser(
+	ctx context.Context,
+	applicationID string,
+	IdentityID int64,
+	username string,
+	err error,
+) (*model.User, error) {
 	user, _ := s.UserService.Get(ctx, applicationID, IdentityID)
 	if user == nil {
 		_, err := s.UserService.Create(ctx, applicationID, IdentityID, username)
+		if err != nil {
+			log.Printf("Error while creating user %+v, erorr: %s\n", user, err)
+			return nil, err
+		}
 		user, err := s.UserService.Get(ctx, applicationID, IdentityID)
 		if err != nil || user == nil {
 			log.Printf("User %v in application %s not found even after creating it\n", IdentityID, applicationID)
@@ -75,7 +91,10 @@ func (s *SessionService) getOrCreateUser(ctx context.Context, applicationID stri
 	return user, nil
 }
 
-func (s *SessionService) Get(ctx context.Context, applicationID string, IdentityID int64, name string) (*model.Session, error) {
+func (s *SessionService) Get(ctx context.Context, applicationID string, IdentityID int64, name string) (
+	*model.Session,
+	error,
+) {
 	application, err := s.ApplicationService.Get(ctx, applicationID)
 	if err != nil {
 		log.Printf("Application %s not found\n", applicationID)
@@ -100,6 +119,7 @@ func (s *SessionService) List(
 	ctx context.Context,
 	applicationID string,
 	IdentityID int64,
+	username string,
 	limit int64,
 	offset int64,
 ) ([]*model.Session, error) {
@@ -108,9 +128,10 @@ func (s *SessionService) List(
 		log.Printf("Application %s not found\n", applicationID)
 		return nil, err
 	}
-	user, err := s.UserService.Get(ctx, applicationID, IdentityID)
+
+	user, err := s.getOrCreateUser(ctx, applicationID, IdentityID, username, err)
 	if err != nil || user == nil {
-		log.Printf("User %v in application %s not found\n", IdentityID, applicationID)
+		log.Printf("User %v in application %s not found even after creating it\n", IdentityID, applicationID)
 		return nil, err
 	}
 	userID := user.ID
@@ -142,8 +163,16 @@ func (s *SessionService) StartSession(
 		return nil, err
 	}
 
-	identity := fmt.Sprintf("[%s][%s] (%s)> Username=%s UserID=%d, Member=%s, Channel=%s (HTTP)",
-		accessToken.ApplicationId, SessionName, session.Name, accessToken.Username, accessToken.UserId, memberID, channel)
+	identity := fmt.Sprintf(
+		"[%s][%s] (%s)> Username=%s UserID=%d, Member=%s, Channel=%s (HTTP)",
+		accessToken.ApplicationId,
+		SessionName,
+		session.Name,
+		accessToken.Username,
+		accessToken.UserId,
+		memberID,
+		channel,
+	)
 	fmt.Printf("Start Sesssion Chat request initialized by %s\n", identity)
 
 	response, err := connector.CreateSession(ctx, accessToken.AccessToken, session.ID, session.Name)

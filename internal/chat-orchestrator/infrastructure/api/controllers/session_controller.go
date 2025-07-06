@@ -74,6 +74,7 @@ func (controller *SessionController) List(c *gin.Context) {
 	var request = handlers.ListSessionRequest{
 		ApplicationID: accessTokenObj.ApplicationId,
 		IdentityID:    accessTokenObj.UserId,
+		Username:      accessTokenObj.Username,
 	}
 	if err := request.Validate(c); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -86,7 +87,10 @@ func (controller *SessionController) List(c *gin.Context) {
 	defer cancel()
 
 	err := handler.Handle(ctx)
-	if err != nil {
+	if errors.Is(err, domainrepository.ErrUserNotFound) {
+		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		return
+	} else if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
