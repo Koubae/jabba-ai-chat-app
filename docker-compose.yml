@@ -1,0 +1,85 @@
+
+services:
+  chat-identity:
+    container_name: jabba-ai-chat-identity
+    image: jabba-ai/chat-identity
+    build:
+      context: .
+      dockerfile: deploy/Dockerfile
+      target: chat-identity
+    restart: unless-stopped
+    volumes:
+      - ./.env.chat-identity:/root/.env.chat-identity
+    ports:
+      - "20000:20000"
+    extra_hosts:
+      - "jabba-ai-db-mysql:host-gateway"
+    networks:
+      - jabba-ai-api-bot
+    environment:
+      - MYSQL_HOST=jabba-ai-db-mysql
+    env_file:
+      - .env.chat-identity
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:20000/alive"]
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  chat-orchestrator:
+    container_name: jabba-ai-chat-orchestrator
+    image: jabba-ai/chat-orchestrator
+    build:
+      context: .
+      dockerfile: deploy/Dockerfile
+      target: chat-orchestrator
+    restart: unless-stopped
+    volumes:
+      - ./.env.chat-orchestrator:/root/.env.chat-orchestrator
+    ports:
+      - "20001:20001"
+    extra_hosts:
+      - "jabba-ai-db-mongodb:host-gateway"
+    networks:
+      - jabba-ai-api-bot
+    environment:
+      - MONGODB_URI=mongodb://root:pass@jabba-ai-db-mongodb:27017
+      - CHAT_SESSION_HOST=http://jabba-ai-chat-session
+    env_file:
+      - .env.chat-orchestrator
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:20001/alive"]
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  chat-session:
+    container_name: jabba-ai-chat-session
+    image: jabba-ai/chat-session
+    build:
+      context: .
+      dockerfile: deploy/Dockerfile
+      target: chat-session
+    restart: unless-stopped
+    volumes:
+      - ./.env.chat-session:/root/.env.chat-session
+    ports:
+      - "20002:20002"
+    extra_hosts:
+      - "jabba-ai-cache:host-gateway"
+      - "jabba-ai-bot:host-gateway"
+    environment:
+      - REDIS_HOST=jabba-ai-cache
+      - AI_BOT_HOST=http://jabba-ai-bot
+    env_file:
+      - .env.chat-session
+    networks:
+      - jabba-ai-api-bot
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:20002/alive"]
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+networks:
+  jabba-ai-api-bot:

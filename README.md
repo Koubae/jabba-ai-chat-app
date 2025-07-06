@@ -41,6 +41,40 @@ make run-chat-identity
 | `chat-session`      | `20002` | http://localhost:20002 |
 
 
+### Docker
+
+```bash
+# build
+make build
+# run all 3 services
+make run 
+```
+
+Or run the individually
+
+**chat-identity**
+
+```bash
+make up-chat-identity
+make down-chat-identity
+make down-chat-identity-v
+``` 
+
+**chat-orchestrator**
+
+```bash
+make up-chat-orchestrator
+make down-chat-orchestrator
+make down-chat-orchestrator-v
+``` 
+
+**chat-session**
+
+```bash
+make up-chat-session
+make down-chat-session
+make down-chat-session-v
+``` 
 
 chat-identity
 -------------

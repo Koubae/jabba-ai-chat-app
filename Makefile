@@ -34,6 +34,62 @@ chat-session-run:
 chat-session-run-local:
 	go run cmd/chat-session/main.go
 
+
+# ============================
+#       Docker
+# ============================
+up:
+	@docker compose up
+
+down:
+	@docker compose down
+
+down-v:
+	@docker compose down -v
+
+build:
+	@echo 'Building images ...🛠️'
+	@docker compose build
+
+
+# //////////////////////
+# 	chat-identity
+# //////////////////////
+up-chat-identity:
+	@docker compose up chat-identity
+
+down-chat-identity:
+	@docker compose down chat-identity
+
+down-chat-identity-v:
+	@docker compose down chat-identity -v
+
+
+# //////////////////////
+# 	chat-orchestrator
+# //////////////////////
+up-chat-orchestrator:
+	@docker compose up chat-orchestrator
+
+down-chat-orchestrator:
+	@docker compose down chat-orchestrator
+
+down-chat-orchestrator-v:
+	@docker compose down chat-orchestrator -v
+
+
+# //////////////////////
+# 	chat-session
+# //////////////////////
+up-chat-session:
+	@docker compose up chat-session
+
+down-chat-session:
+	@docker compose down chat-session
+
+down-chat-session-v:
+	@docker compose down chat-session -v
+
 # ============================
 # 	Tests
 # ============================
