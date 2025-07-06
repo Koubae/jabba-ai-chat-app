@@ -23,7 +23,13 @@ type SessionService struct {
 	*bot.AIBotConnector
 }
 
-func (s *SessionService) CreateSession(ctx context.Context, sessionID string, name string) (*model.Session, error) {
+func (s *SessionService) CreateSession(
+	ctx context.Context,
+	sessionID string,
+	name string,
+	memberID string,
+	channel string,
+) (*model.Session, error) {
 	accessToken, ok := ctx.Value("access_token").(*auth.AccessToken)
 	if !ok {
 		return nil, fmt.Errorf("access_token not found, cannot create session")
@@ -34,8 +40,15 @@ func (s *SessionService) CreateSession(ctx context.Context, sessionID string, na
 		ApplicationID: accessToken.ApplicationId,
 		ID:            sessionID,
 		Name:          name,
-		Created:       time.Now().UTC(),
-		Updated:       time.Now().UTC(),
+		Owner: &model.Member{
+			Role:     "user",
+			UserID:   accessToken.UserId,
+			Username: accessToken.Username,
+			MemberID: memberID,
+			Channel:  channel,
+		},
+		Created: time.Now().UTC(),
+		Updated: time.Now().UTC(),
 	}
 
 	sessionInCache, _ := s.repository.Get(ctx, session.ApplicationID, session.ID)
@@ -63,7 +76,10 @@ func (s *SessionService) CreateSession(ctx context.Context, sessionID string, na
 	return session, nil
 }
 
-func (s *SessionService) GetSession(ctx context.Context, applicationID string, sessionID string) (*model.Session, error) {
+func (s *SessionService) GetSession(ctx context.Context, applicationID string, sessionID string) (
+	*model.Session,
+	error,
+) {
 	session, err := s.repository.Get(ctx, applicationID, sessionID)
 	if err != nil {
 		return nil, err

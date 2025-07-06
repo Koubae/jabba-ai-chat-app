@@ -314,7 +314,7 @@
         try {
             const client = clients[clientIndex];
             const sessionID = client.elements.sessionId.value;
-
+            const memberID = `member_${clientIndex + 1}`;
             const response = await fetch(SESSION_CREATE_ENDPOINT, {
                 method: 'POST',
                 headers: {
@@ -323,7 +323,10 @@
                 },
                 body: JSON.stringify({
                     session_id: sessionID,
-                    name: "e2e-session"
+                    name: "e2e-session",
+                    member_id: memberID,
+                    channel: CHANNEL,
+
                 })
             });
 

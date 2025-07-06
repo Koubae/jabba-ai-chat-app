@@ -48,6 +48,14 @@ func TestRedisSessionRepository(t *testing.T) {
 	db := redis.GetClient()
 	repository := NewSessionRepository(db)
 
+	owner := &model.Member{
+		Role:     "user",
+		UserID:   1,
+		Username: "test-user",
+		MemberID: "device-1234",
+		Channel:  "mobile",
+	}
+
 	applicationID := "application-id-test" + utils.RandomString(20)
 	sessionName := "session-test" + utils.RandomString(20)
 
@@ -56,6 +64,7 @@ func TestRedisSessionRepository(t *testing.T) {
 			ApplicationID: applicationID,
 			ID:            fmt.Sprintf("session-id-test-%d", utils.RandInt(1, 99999)),
 			Name:          sessionName,
+			Owner:         owner,
 			Created:       time.Now().UTC(),
 			Updated:       time.Now().UTC(),
 		}
@@ -69,6 +78,7 @@ func TestRedisSessionRepository(t *testing.T) {
 			ApplicationID: applicationID,
 			ID:            fmt.Sprintf("session-id-test-%d", utils.RandInt(1, 99999)),
 			Name:          sessionName,
+			Owner:         owner,
 			Created:       time.Now().UTC(),
 			Updated:       time.Now().UTC(),
 		}
