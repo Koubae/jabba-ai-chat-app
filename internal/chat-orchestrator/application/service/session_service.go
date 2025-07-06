@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/Koubae/jabba-ai-chat-app/internal/chat-orchestrator/domain/application/model"
 	"github.com/Koubae/jabba-ai-chat-app/internal/chat-orchestrator/domain/application/repository"
+	"github.com/Koubae/jabba-ai-chat-app/internal/chat-orchestrator/infrastructure/connector"
 	"github.com/Koubae/jabba-ai-chat-app/pkg/auth"
 	"log"
 )
@@ -125,18 +126,31 @@ func (s *SessionService) List(
 	return sessions, nil
 }
 
-func (s *SessionService) StartSession(ctx context.Context, SessionName string, memberID string, channel string) (string, error) {
+func (s *SessionService) StartSession(
+	ctx context.Context,
+	connector *connector.ChatSessionConnector,
+	SessionName string,
+	memberID string,
+	channel string,
+) (*connector.Response, error) {
 	accessToken, ok := ctx.Value("access_token").(*auth.AccessToken)
 	if !ok {
-		return "", fmt.Errorf("access_token not found, cannot create session")
+		return nil, fmt.Errorf("access_token not found, cannot create session")
 	}
 	session, err := s.Get(ctx, accessToken.ApplicationId, accessToken.UserId, SessionName)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	identity := fmt.Sprintf("[%s][%s] (%s)> Username=%s UserID=%d, Member=%s, Channel=%s (HTTP)",
 		accessToken.ApplicationId, SessionName, session.Name, accessToken.Username, accessToken.UserId, memberID, channel)
 	fmt.Printf("Start Sesssion Chat request initialized by %s\n", identity)
-	return "", nil
+
+	response, err := connector.CreateSession(ctx, accessToken.AccessToken, session.ID, session.Name)
+	if err != nil {
+		fmt.Printf("Start Sesssion Chat request initialized by %s\n", identity)
+		return nil, err
+
+	}
+	return response, nil
 }

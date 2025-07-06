@@ -4,9 +4,11 @@ import (
 	"errors"
 	"github.com/Koubae/jabba-ai-chat-app/internal/chat-orchestrator/application/service"
 	"github.com/Koubae/jabba-ai-chat-app/internal/chat-orchestrator/domain/application/model"
+	"github.com/Koubae/jabba-ai-chat-app/internal/chat-orchestrator/infrastructure/connector"
 	"github.com/gin-gonic/gin"
 	"golang.org/x/net/context"
 	"strconv"
+	"time"
 )
 
 type CreateSessionRequest struct {
@@ -124,20 +126,32 @@ type StartSessionRequest struct {
 }
 
 type StartSessionResponse struct {
-	ConnectionHost string `json:"connection_host"`
+	//ConnectionHost string `json:"connection_host"`
+	ID            string     `json:"id"`
+	ApplicationId string     `json:"application_id"`
+	Name          string     `json:"name"`
+	Created       *time.Time `json:"created"`
+	Updated       *time.Time `json:"updated"`
 }
 
 type StartSessionHandler struct {
 	Command  StartSessionRequest
 	Response StartSessionResponse
 	*service.SessionService
+	*connector.ChatSessionConnector
 }
 
 func (h *StartSessionHandler) Handle(ctx context.Context) error {
-	connectionHost, err := h.SessionService.StartSession(ctx, h.Command.SessionName, h.Command.MemberID, h.Command.Channel)
+	response, err := h.SessionService.StartSession(ctx, h.ChatSessionConnector, h.Command.SessionName, h.Command.MemberID, h.Command.Channel)
 	if err != nil {
 		return err
 	}
-	h.Response = StartSessionResponse{ConnectionHost: connectionHost}
+	h.Response = StartSessionResponse{
+		ID:            response.ID,
+		ApplicationId: response.ApplicationId,
+		Name:          response.Name,
+		Created:       response.Created,
+		Updated:       response.Updated,
+	}
 	return nil
 }

@@ -109,7 +109,11 @@ func (controller *SessionController) StartSession(c *gin.Context) {
 		ctx = context.WithValue(ctx, "access_token", accessToken)
 	}
 
-	handler := handlers.StartSessionHandler{Command: request, SessionService: container.Container.SessionService}
+	handler := handlers.StartSessionHandler{
+		Command:              request,
+		SessionService:       container.Container.SessionService,
+		ChatSessionConnector: container.Container.ChatSessionConnector,
+	}
 	err := handler.Handle(ctx)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
