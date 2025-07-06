@@ -23,6 +23,8 @@ type ChatSessionConnector struct {
 type Request struct {
 	SessionID string `json:"session_id"`
 	Name      string `json:"name"`
+	MemberID  string `json:"member_id"`
+	Channel   string `json:"channel"`
 }
 
 type Response struct {
@@ -56,10 +58,14 @@ func (c *ChatSessionConnector) CreateSession(
 	accessToken string,
 	sessionID string,
 	name string,
+	memberID string,
+	channel string,
 ) (*Response, error) {
 	requestBody := Request{
 		SessionID: sessionID,
 		Name:      name,
+		MemberID:  memberID,
+		Channel:   channel,
 	}
 
 	jsonData, err := json.Marshal(requestBody)

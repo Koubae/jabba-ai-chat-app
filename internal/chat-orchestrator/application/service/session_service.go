@@ -175,7 +175,7 @@ func (s *SessionService) StartSession(
 	)
 	fmt.Printf("Start Sesssion Chat request initialized by %s\n", identity)
 
-	response, err := connector.CreateSession(ctx, accessToken.AccessToken, session.ID, session.Name)
+	response, err := connector.CreateSession(ctx, accessToken.AccessToken, session.ID, session.Name, memberID, channel)
 	if err != nil {
 		fmt.Printf("Start Sesssion Chat request initialized by %s\n", identity)
 		return nil, err
