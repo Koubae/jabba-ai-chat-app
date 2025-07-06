@@ -53,6 +53,7 @@ func (s *SessionService) CreateSession(
 
 	sessionInCache, _ := s.repository.Get(ctx, session.ApplicationID, session.ID, accessToken.UserId)
 	if sessionInCache != nil {
+		log.Printf("CACHED SESSION OWNER: %+v\n", sessionInCache.Owner) // Add this line
 		if !sessionInCache.IsSameOwner(session) {
 			log.Printf(
 				"Session already exists but belongs to a different owner.\n-Request: %+v\n-Found: %+v\n",

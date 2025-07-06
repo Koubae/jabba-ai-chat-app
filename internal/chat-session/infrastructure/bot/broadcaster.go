@@ -50,7 +50,14 @@ func (cm *Broadcaster) Connect(
 	connections, _ := cm.connections[applicationID][sessionID]
 	for _, connection := range connections {
 		if connection.MemberID == memberID {
-			return errors.New(fmt.Sprintf("Member %s %s already connected to session %s", username, memberID, sessionID))
+			return errors.New(
+				fmt.Sprintf(
+					"Member %s %s already connected to session %s",
+					username,
+					memberID,
+					sessionID,
+				),
+			)
 		}
 	}
 
@@ -95,9 +102,6 @@ func (cm *Broadcaster) Disconnect(conn *websocket.Conn, applicationID string, se
 	}
 
 	// Forcing client to disconnect (in case is still connected)
-	// TODO: check if we should close connection here or not.
-	// I say that we should attempt to do it since it may fail during broadcasting (and we remove the connection)
-	// but the actual WebSocket may be connected still.
 	err := conn.Close()
 	if err != nil {
 		log.Printf("Failed to close connection: %s", err)

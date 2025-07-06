@@ -80,8 +80,14 @@ func (s *ChatService) CreateConnectionAndStartChat(
 		conn:        conn,
 		accessToken: accessToken.AccessToken,
 		Session:     session,
-		Member:      &model.Member{MemberID: memberID, Channel: channel},
-		identity:    identity,
+		Member: &model.Member{
+			Role:     "user",
+			UserID:   accessToken.UserId,
+			Username: accessToken.Username,
+			MemberID: memberID,
+			Channel:  channel,
+		},
+		identity: identity,
 	}
 
 	response, err = handler.Handle(ctx, s.Broadcaster, s.AIBotConnector, s.messageRepository)

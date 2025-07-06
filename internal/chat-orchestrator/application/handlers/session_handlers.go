@@ -134,7 +134,7 @@ type StartSessionRequest struct {
 
 type StartSessionHandler struct {
 	Command  StartSessionRequest
-	Response *connector.Response
+	Response *model.SessionConnection
 	*service.SessionService
 	*connector.ChatSessionConnector
 }

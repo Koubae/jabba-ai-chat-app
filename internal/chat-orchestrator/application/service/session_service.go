@@ -153,7 +153,7 @@ func (s *SessionService) StartSession(
 	SessionName string,
 	memberID string,
 	channel string,
-) (*connector.Response, error) {
+) (*model.SessionConnection, error) {
 	accessToken, ok := ctx.Value("access_token").(*auth.AccessToken)
 	if !ok {
 		return nil, fmt.Errorf("access_token not found, cannot create session")

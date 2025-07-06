@@ -5,7 +5,7 @@ import (
 	"errors"
 	"github.com/Koubae/jabba-ai-chat-app/internal/chat-session/application/service"
 	"github.com/Koubae/jabba-ai-chat-app/internal/chat-session/domain/model"
-	"github.com/Koubae/jabba-ai-chat-app/pkg/common/settings"
+	"github.com/Koubae/jabba-ai-chat-app/pkg/common/utils"
 	"strings"
 )
 
@@ -58,9 +58,8 @@ func (h *CreateSessionHandler) Handle(ctx context.Context) error {
 		return err
 	}
 
-	config := settings.GetConfig()
 	h.Response = &CreateSessionResponse{
-		ChatURL: config.GetURL(),
+		ChatURL: utils.GetEnvString("APP_WEBSOCKET_HOST", "ws://localhost:20002"),
 		Session: *session,
 	}
 	return nil

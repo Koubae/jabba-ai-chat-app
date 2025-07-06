@@ -28,3 +28,18 @@ type Session struct {
 	Created       time.Time `json:"created"`
 	Updated       time.Time `json:"updated"`
 }
+
+type SessionConnection struct {
+	ChatURL string `json:"chat_url"`
+	Session
+	UserID string  `json:"user_id,omitempty"`
+	Owner  *Member `json:"owner"`
+}
+
+type Member struct {
+	Role     string `json:"role"`
+	UserID   int64  `json:"user_id"`
+	Username string `json:"username"`
+	MemberID string `json:"member_id"`
+	Channel  string `json:"channel"`
+}

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/Koubae/jabba-ai-chat-app/internal/chat-orchestrator/domain/application/model"
 	"github.com/Koubae/jabba-ai-chat-app/pkg/common/utils"
 	"golang.org/x/net/context"
 	"io"
@@ -27,14 +28,14 @@ type Request struct {
 	Channel   string `json:"channel"`
 }
 
-type Response struct {
-	ChatURL       string     `json:"chat_url"`
-	ID            string     `json:"id"`
-	ApplicationId string     `json:"application_id"`
-	Name          string     `json:"name"`
-	Created       *time.Time `json:"created"`
-	Updated       *time.Time `json:"updated"`
-}
+// type Response struct {
+// 	ChatURL       string     `json:"chat_url"`
+// 	ID            string     `json:"id"`
+// 	ApplicationId string     `json:"application_id"`
+// 	Name          string     `json:"name"`
+// 	Created       *time.Time `json:"created"`
+// 	Updated       *time.Time `json:"updated"`
+// }
 
 func NewChatSessionConnector() *ChatSessionConnector {
 	host := utils.GetEnvString("CHAT_SESSION_HOST", "http://localhost")
@@ -60,7 +61,7 @@ func (c *ChatSessionConnector) CreateSession(
 	name string,
 	memberID string,
 	channel string,
-) (*Response, error) {
+) (*model.SessionConnection, error) {
 	requestBody := Request{
 		SessionID: sessionID,
 		Name:      name,
@@ -102,7 +103,7 @@ func (c *ChatSessionConnector) CreateSession(
 		return nil, fmt.Errorf("HTTP error: %d - %s", resp.StatusCode, string(body))
 	}
 
-	var response Response
+	var response model.SessionConnection
 	if err := json.Unmarshal(body, &response); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
 	}
