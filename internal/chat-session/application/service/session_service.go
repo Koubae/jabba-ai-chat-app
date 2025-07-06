@@ -53,6 +53,15 @@ func (s *SessionService) CreateSession(
 
 	sessionInCache, _ := s.repository.Get(ctx, session.ApplicationID, session.ID)
 	if sessionInCache != nil {
+		if !sessionInCache.IsSameOwner(session) {
+			log.Printf(
+				"Session already exists but belongs to a different owner.\n-Request: %+v\n-Found: %+v\n",
+				session,
+				sessionInCache,
+			)
+			return nil, model.ErrIsNotOwnerOfSession
+		}
+
 		log.Printf("Session %+v already exists in cache, returning it\n", session)
 		return sessionInCache, nil
 	}

@@ -1,6 +1,9 @@
 package model
 
-import "time"
+import (
+	"errors"
+	"time"
+)
 
 type Message struct {
 	ApplicationID string `json:"application_id"`
@@ -26,3 +29,15 @@ type Session struct {
 	Created       time.Time `json:"created"`
 	Updated       time.Time `json:"updated"`
 }
+
+func (s *Session) IsSameOwner(other *Session) bool {
+	if s.Owner == nil && other.Owner == nil {
+		return true
+	}
+	if s.Owner == nil || other.Owner == nil {
+		return false
+	}
+	return s.Owner.UserID == other.Owner.UserID
+}
+
+var ErrIsNotOwnerOfSession = errors.New("MEMBER_IS_NOT_OWNER_OF_SESSION")
