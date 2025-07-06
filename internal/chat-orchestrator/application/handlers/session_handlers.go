@@ -8,7 +8,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"golang.org/x/net/context"
 	"strconv"
-	"time"
 )
 
 type CreateSessionRequest struct {
@@ -125,18 +124,9 @@ type StartSessionRequest struct {
 	Channel     string `json:"channel" binding:"required"`
 }
 
-type StartSessionResponse struct {
-	//ConnectionHost string `json:"connection_host"`
-	ID            string     `json:"id"`
-	ApplicationId string     `json:"application_id"`
-	Name          string     `json:"name"`
-	Created       *time.Time `json:"created"`
-	Updated       *time.Time `json:"updated"`
-}
-
 type StartSessionHandler struct {
 	Command  StartSessionRequest
-	Response StartSessionResponse
+	Response *connector.Response
 	*service.SessionService
 	*connector.ChatSessionConnector
 }
@@ -146,12 +136,6 @@ func (h *StartSessionHandler) Handle(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	h.Response = StartSessionResponse{
-		ID:            response.ID,
-		ApplicationId: response.ApplicationId,
-		Name:          response.Name,
-		Created:       response.Created,
-		Updated:       response.Updated,
-	}
+	h.Response = response
 	return nil
 }

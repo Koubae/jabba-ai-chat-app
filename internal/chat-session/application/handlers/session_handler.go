@@ -5,6 +5,7 @@ import (
 	"errors"
 	"github.com/Koubae/jabba-ai-chat-app/internal/chat-session/application/service"
 	"github.com/Koubae/jabba-ai-chat-app/internal/chat-session/domain/model"
+	"github.com/Koubae/jabba-ai-chat-app/pkg/common/settings"
 	"strings"
 )
 
@@ -26,9 +27,14 @@ func (r *CreateSessionRequest) Validate() error {
 	return nil
 }
 
+type CreateSessionResponse struct {
+	ChatURL string `json:"chat_url"`
+	model.Session
+}
+
 type CreateSessionHandler struct {
 	Command  CreateSessionRequest
-	Response *model.Session
+	Response *CreateSessionResponse
 	*service.SessionService
 }
 
@@ -37,6 +43,12 @@ func (h *CreateSessionHandler) Handle(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	h.Response = session
+
+	config := settings.GetConfig()
+
+	h.Response = &CreateSessionResponse{
+		ChatURL: config.GetURL(),
+		Session: *session,
+	}
 	return nil
 }

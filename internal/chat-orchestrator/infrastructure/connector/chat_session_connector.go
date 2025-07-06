@@ -26,6 +26,7 @@ type Request struct {
 }
 
 type Response struct {
+	ChatURL       string     `json:"chat_url"`
 	ID            string     `json:"id"`
 	ApplicationId string     `json:"application_id"`
 	Name          string     `json:"name"`

@@ -9,6 +9,7 @@ import (
 )
 
 type Config struct {
+	host           string
 	port           uint16
 	AppName        string
 	AppVersion     string
@@ -20,6 +21,10 @@ func (c Config) GetAddr() string {
 	return fmt.Sprintf(":%d", c.port)
 }
 
+func (c Config) GetURL() string {
+	return fmt.Sprintf("%s:%d", c.host, c.port)
+}
+
 var config *Config
 
 func GetConfig() *Config {
@@ -29,6 +34,7 @@ func GetConfig() *Config {
 	return config
 }
 func NewConfig() *Config {
+	host := utils.GetEnvString("APP_HOST", "http://localhost")
 	port := utils.GetEnvInt("APP_PORT", 8001)
 
 	errTemp := os.Setenv("PORT", strconv.Itoa(port)) // For gin-gonic
@@ -46,6 +52,7 @@ func NewConfig() *Config {
 	trustedProxies := utils.GetEnvStringSlice("APP_NETWORKING_PROXIES", []string{})
 
 	config = &Config{
+		host:           host,
 		port:           uint16(port),
 		AppName:        appName,
 		AppVersion:     appVersion,
