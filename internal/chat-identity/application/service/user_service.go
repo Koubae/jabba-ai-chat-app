@@ -48,3 +48,8 @@ func (s *UserService) GetUser(applicationID string, username string) (*model.Use
 	return user, nil
 
 }
+
+func (s *UserService) VerifyPassword(hashedPassword, plainPassword string) bool {
+	err := bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(plainPassword))
+	return err == nil
+}

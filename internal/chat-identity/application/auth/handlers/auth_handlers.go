@@ -56,6 +56,10 @@ func (h *LoginHandler) Handle() error {
 		return err
 	}
 
+	if !h.UserService.VerifyPassword(user.PasswordHash, h.Command.Password) {
+		return domainrepository.ErrInvalidCredentials // You'll need to define this error
+	}
+
 	token, err := generateJWTWithRSA(user.ID, user.ApplicationID, user.Username, expire)
 	if err != nil {
 		return err

@@ -33,7 +33,10 @@ func (controller *AuthController) LoginV1(c *gin.Context) {
 
 	err := handler.Handle()
 	if errors.Is(err, domainrepository.ErrUserNotFound) {
-		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		return
+	} else if errors.Is(err, domainrepository.ErrInvalidCredentials) {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 		return
 	} else if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
