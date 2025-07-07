@@ -71,6 +71,7 @@ services:
     environment:
       - REDIS_HOST=jabba-ai-cache
       - AI_BOT_HOST=http://jabba-ai-bot
+      - APP_WEBSOCKET_HOST=ws://jabba-ai-chat-session:20002
     env_file:
       - .env.chat-session
     networks:
