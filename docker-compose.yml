@@ -68,6 +68,7 @@ services:
     extra_hosts:
       - "jabba-ai-cache:host-gateway"
       - "jabba-ai-bot:host-gateway"
+      - "jabba-ai-ui:host-gateway"
     environment:
       - REDIS_HOST=jabba-ai-cache
       - AI_BOT_HOST=http://jabba-ai-bot
