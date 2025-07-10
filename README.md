@@ -6,7 +6,7 @@ _The ChatApp of jabba-ai_
 # SEE --> [jabba-ai](https://github.com/Koubae/jabba-ai)
 
 <p align="center">
-  <img src="docs/imgs/jabba.webp" />
+  <img src="docs/imgs/jabba.png" />
 </p>
 
 
