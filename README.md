@@ -1,9 +1,14 @@
 jabba-ai-chat-app
 =================
 
-The ChatApp of jabba-ai
+_The ChatApp of jabba-ai_
 
-* [jabba-ai](https://github.com/Koubae/jabba-ai)
+# SEE --> [jabba-ai](https://github.com/Koubae/jabba-ai)
+
+<p align="center">
+  <img src="docs/imgs/jabba.webp" />
+</p>
+
 
 
 ### QuickStart
